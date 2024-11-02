@@ -26,6 +26,48 @@ sensitive_data_map = {}  # Define this here as a global variable
 
 # Define regex patterns with descriptions, severity, and automatic fix suggestions
 PATTERNS = [
+
+    (re.compile(r'management\.endpoints\.web\.exposure\.include\s*=\s*\*', re.IGNORECASE), 
+     'All Actuator Endpoints Exposed', 'High', 'Limit exposure of Actuator endpoints to necessary endpoints only, and secure with authentication.'),
+    (re.compile(r'management\.endpoints\.web\.exposure\.include\s*=\s*(health|info)', re.IGNORECASE), 
+     'Exposed Actuator Endpoint (health/info)', 'Medium', 'Ensure that exposed endpoints are not disclosing sensitive information.'),
+
+    # CSRF Protection Disabled
+    (re.compile(r'spring\.security\.csrf\.enabled\s*=\s*false', re.IGNORECASE), 
+     'CSRF Protection Disabled', 'High', 'Enable CSRF protection for all forms or secure endpoints requiring stateful interactions.'),
+
+    # Insecure Password Storage (plaintext passwords)
+    (re.compile(r'spring\.data\.source\.password\s*=\s*[\'"]?[a-zA-Z0-9]*[\'"]?', re.IGNORECASE), 
+     'Insecure Password Storage', 'High', 'Store database credentials in a secure configuration provider or environment variable.'),
+    
+    # Weak or No Content Security Policy (CSP) Headers
+    (re.compile(r'Content-Security-Policy\s*:\s*default-src\s+.*;', re.IGNORECASE), 
+     'Missing or Weak Content Security Policy (CSP)', 'Medium', 'Define a strict CSP to prevent unauthorized resource loading and mitigate XSS risks.'),
+    
+    # Insecure Transport Layer (HTTPS should be enforced)
+    (re.compile(r'http\.server\.secure-port\s*=\s*8080', re.IGNORECASE), 
+     'HTTP Connection Allowed', 'High', 'Ensure all connections enforce HTTPS with SSL/TLS configurations.'),
+
+    # Default CORS Policy (Cross-Origin Resource Sharing) Exposure
+    (re.compile(r'spring\.web\.cors\.allowed-origin-patterns\s*=\s*\*', re.IGNORECASE), 
+     'CORS Policy Allows All Origins', 'High', 'Restrict CORS to only trusted domains. Avoid using wildcard (*) in production.'),
+    
+    # Disabled HTTPS or SSL/TLS (Check for property allowing HTTP)
+    (re.compile(r'server\.ssl\.enabled\s*=\s*false', re.IGNORECASE), 
+     'SSL/TLS Disabled', 'High', 'Enable SSL/TLS to ensure secure communication over HTTPS.'),
+    
+    # X-Frame-Options Header Missing or Set to Allow
+    (re.compile(r'X-Frame-Options\s*:\s*ALLOW', re.IGNORECASE), 
+     'X-Frame-Options Header Allows Embedding', 'Medium', 'Set X-Frame-Options header to DENY or SAMEORIGIN to prevent clickjacking.'),
+
+    # Insecure H2 Console Exposure
+    (re.compile(r'spring\.h2\.console\.enabled\s*=\s*true', re.IGNORECASE), 
+     'Insecure H2 Console Exposure', 'High', 'Disable H2 console in production or secure with authentication.'),
+
+    # Debugging Enabled (not for production)
+    (re.compile(r'spring\.boot\.admin\.client\.enabled\s*=\s*true', re.IGNORECASE), 
+     'Debugging Enabled in Production', 'High', 'Disable debug settings in production environments to avoid exposing internal information.'),
+    
     # API Keys and Secrets
     (re.compile(r'(?i)(api[_-]?key|secret|token)[\s:=]+[\'"]?[\w-]{16,}[\'"]?'), 
      'Hardcoded API Key or Secret', 'High', 'Move secrets to environment variables.'),
