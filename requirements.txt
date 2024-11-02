@@ -1,0 +1,14 @@
+os
+re
+logging
+hashlib
+csv
+yaml
+colorama==0.4.4
+lxml==4.9.1
+concurrent.futures
+argparse
+datetime
+colorama==0.4.4
+lxml==4.9.1
+PyYAML==5.4.1
