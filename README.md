@@ -15,7 +15,7 @@ GuardTrex is a comprehensive security scanning tool designed to identify and rep
 
 1. Clone this repository:
    ```bash
-   git clone (https://github.com/CyberDemon73/GuardTrex.git)
+   git clone https://github.com/CyberDemon73/GuardTrex.git
    cd GuardTrex
    ```
 
