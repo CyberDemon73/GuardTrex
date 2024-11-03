@@ -61,15 +61,112 @@ All scanning activities and any errors encountered are logged in `security_scan.
 
 ## Example Issues Detected
 
-1. **API Keys and Secrets**: Detects hardcoded secrets and platform tokens.
-2. **Passwords and Authentication Data**: Flags hardcoded passwords and session tokens.
-3. **Database Connection Strings**: Identifies JDBC and SQL connection strings in the code.
-4. **Cryptographic Keys**: Alerts for hardcoded cryptographic keys.
-5. **Personally Identifiable Information (PII)**: Finds patterns related to SSNs, DOBs, and phone numbers.
-6. **Credit Card Numbers**: Identifies major credit card number patterns.
-7. **Insecure Protocols**: Flags URLs using insecure HTTP protocols.
-8. **Debugging Information**: Detects debugging flags and localhost URLs.
-9. **IP Address Exposure**: Warns about exposed IP addresses in code.
+**1. Configuration and Security Settings**
+   - **Exposure of Sensitive Endpoints**
+     - `management.endpoints.web.exposure.include=*` - All Actuator Endpoints Exposed (High)
+     - `management.endpoints.web.exposure.include=health|info` - Exposed Actuator Endpoint (Medium)
+     - `spring.h2.console.enabled=true` - Insecure H2 Console Exposure (High)
+     - `spring.boot.admin.client.enabled=true` - Debugging Enabled in Production (High)
+   - **Cross-Site Request Forgery (CSRF)**
+     - `spring.security.csrf.enabled=false` - CSRF Protection Disabled (High)
+   - **Content Security Policy (CSP)**
+     - `Content-Security-Policy: default-src *;` - Weak/Missing CSP (Medium)
+   - **Transport Layer Security (TLS)**
+     - `server.ssl.enabled=false` - SSL/TLS Disabled (High)
+     - `http.server.secure-port=8080` - HTTP Connection Allowed (High)
+   - **Cross-Origin Resource Sharing (CORS)**
+     - `spring.web.cors.allowed-origin-patterns=*` - CORS Policy Allows All Origins (High)
+   - **Clickjacking Protection**
+     - `X-Frame-Options: ALLOW` - X-Frame-Options Header Allows Embedding (Medium)
+     
+**2. Hardcoded Secrets and Sensitive Data**
+   - **API Keys and Secrets**
+     - `api_key|secret|token` - Hardcoded API Key or Secret (High)
+     - `aws_secret|aws_access_key|s3_bucket` - AWS Secret Key or S3 Bucket Exposure (High)
+     - `github|gitlab|bitbucket|slack` - Hardcoded GitHub/GitLab/Slack Token (High)
+     - `firebase_api_key` - Firebase API Key Exposure (High)
+     - `gcp_secret|google_cloud` - Google Cloud Secret or API Key Exposure (High)
+     - `azure_secret|azure_key` - Azure Secret Key Exposure (High)
+   - **Password Storage**
+     - `spring.data.source.password` - Insecure Password Storage (High)
+     - `password|passwd|pwd|auth` - Hardcoded Password (High)
+   - **Tokens and Session Management**
+     - `auth|oauth|session|jwt` - Sensitive Token Declaration (High)
+     - `session_id|sess_id` - Hardcoded Session ID or Token (High)
+     - `oauth|bearer|access|refresh` - Hardcoded OAuth/Bearer/Access/Refresh Token (High)
+
+**3. Insecure Data Transmission and Endpoint Security**
+   - **Database Connection Strings**
+     - `jdbc:*://` - JDBC Connection String (High)
+     - `mongodb|mysql|oracle|postgres|mssql` - SQL Connection String (High)
+     - `redis|memcached` - Insecure Cache Connection String (Medium)
+   - **Cryptographic Keys**
+     - `private_key|public_key|pem|rsa_key` - Hardcoded Cryptographic Key (High)
+     - `BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY` - Hardcoded Private Key (High)
+     - `ssh-rsa|ssh-ed25519` - Potential SSH Public Key (Medium)
+     - `aes_key|des_key|3des_key|blowfish_key` - Hardcoded Symmetric Encryption Key (High)
+   - **Insecure Protocols**
+     - `http://` - Insecure HTTP URL (Medium)
+     - `ftp|smb://` - FTP/SMB URL (Medium)
+
+**4. Personally Identifiable Information (PII)**
+   - **Social Security and ID Numbers**
+     - `\d{3}-\d{2}-\d{4}` - Potential SSN (High)
+     - `\d{4}-\d{6}-\d{4}` - National ID or Tax ID Number (High)
+   - **Personal Information**
+     - `dob|date_of_birth` - Hardcoded Date of Birth (High)
+     - `phone_number|contact` - Hardcoded Phone Number (Medium)
+   - **Credit Card Information**
+     - `Visa`, `MasterCard`, `American Express`, `Discover` patterns - Potential Credit Card Numbers (High)
+
+**5. Sensitive Data in Logs and External Requests**
+   - **Logging Sensitive Data**
+     - `print|console.log|logger.info|logger.debug|logging.info` - Sensitive Data in Logs (High)
+   - **External Data Transmission**
+     - `fetch|requests.get|requests.post|http.get|http.post` - Sensitive Data in External Requests (High)
+
+**6. Deprecated Libraries and Insecure Framework Versions**
+   - **Outdated Libraries**
+     - `openssl=1.0.x` - Deprecated OpenSSL Version (High)
+
+**7. Injection Vulnerabilities**
+   - **Command Injection**
+     - `eval|exec|subprocess.call|os.system|ProcessBuilder` - Potential Command Injection (High)
+   - **SQL Injection**
+     - `PreparedStatement(...);` - SQL Injection via Dynamic Query (High)
+
+**8. Framework-Specific Issues**
+   - **Spring Boot Management Endpoints**
+     - `spring.boot.admin|actuator|health|env|configprops|mappings|trace|loggers|heapdump|threaddump|metrics` - Potentially Exposed Spring Boot Actuator Endpoint (High)
+   - **Hardcoded Spring Boot Database Credentials**
+     - `spring.data.source.username|spring.data.source.password` - Hardcoded Database Credentials in Spring Boot (High)
+
+**9. Control Flow and Access Control**
+   - **Access Control and Authorization Checks**
+     - `if(auth|login)` - Authentication/Authorization Check (Informational)
+     - `if(isAdmin|role)` - Role-Based Access Control Check (Informational)
+
+**10. Debugging and Development**
+   - **Debugging Settings**
+     - `debug|development=true|1` - Debug Mode Enabled (Medium)
+   - **Non-Production URLs**
+     - `dev|test|sandbox|staging url` - Development/Test URL (Low)
+
+**11. IP Address and Whitelist Exposure**
+   - **IP Addresses**
+     - `(?:\d{1,3}\.){3}\d{1,3}` - IP Address Exposure (Medium)
+   - **Hardcoded IP Whitelists**
+     - `whitelist_ip` - Hardcoded IP Whitelist (Medium)
+
+**12. Miscellaneous Sensitive Information**
+   - **Application Secrets**
+     - `app_secret|app_id|client_id|client_secret` - Hardcoded Application Secret (High)
+   - **SMTP/Email/FTP/Proxy**
+     - `smtp|mail|email|ftp|proxy` - SMTP/Email/FTP/Proxy URL Exposure (Medium)
+   - **Authorization Headers**
+     - `authorization_header|auth_header` - Hardcoded Authorization Header (High)
+   - **Access and Refresh Tokens**
+     - `access_token|refresh_token` - Hardcoded Access or Refresh Token (High)
 
 ## Illustrating Diagram
 
