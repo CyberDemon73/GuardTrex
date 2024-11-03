@@ -73,7 +73,7 @@ All scanning activities and any errors encountered are logged in `security_scan.
 
 ## Illustrating Diagram
 
-<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Diagram.svg" alt="Diagram" width="500">
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Diagram.svg" alt="Diagram" width="1000">
 
 ## Contribution
 
