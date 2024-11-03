@@ -11,6 +11,9 @@ from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 from datetime import datetime
+from collections import defaultdict  # Import defaultdict here
+from jinja2 import Template
+
 
 # Initialize colorama
 init(autoreset=True)
@@ -435,23 +438,215 @@ def print_findings(findings):
         print(f"{color}    - Code Snippet: {finding.get('snippet', '').strip()}{Style.RESET_ALL}")
         print()  # Blank line for readability
 
+def export_to_html(findings, filename="security_scan_report.html"):
+    """Export findings to an HTML report with sorting, pagination, search, filter, collapsible sections, and logo."""
+    unique_findings = {}
+    for finding in findings:
+        key = (finding['file'], finding['line'], finding['description'])
+        if key not in unique_findings:
+            unique_findings[key] = {
+                "finding": finding,
+                "count": 1,
+                "locations": [(finding['file'], finding['line'])]
+            }
+        else:
+            unique_findings[key]["count"] += 1
+            unique_findings[key]["locations"].append((finding['file'], finding['line']))
+
+    sorted_findings = defaultdict(list)
+    for unique_finding in unique_findings.values():
+        sorted_findings[unique_finding["finding"]['severity']].append(unique_finding)
+
+    # HTML template with collapsible sections and color mapping
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>GuardTrex Security Scan Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+            header { display: flex; align-items: center; padding: 20px; border-bottom: 2px solid #ddd; }
+            .logo { font-size: 24px; font-weight: bold; color: #333; }
+            .report-title { font-size: 28px; color: #555; margin-left: auto; }
+            .controls { display: flex; justify-content: space-between; padding: 20px; }
+            .search-box { flex: 1; padding: 10px; font-size: 16px; }
+            .filter, .sort { margin-left: 10px; padding: 10px; font-size: 16px; }
+            .summary { padding: 20px; text-align: center; font-size: 18px; background-color: #f9f9f9; border-bottom: 2px solid #ddd; }
+            .summary-item { margin: 5px; font-weight: bold; }
+            .severity-section { margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
+            .section-title { padding: 15px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+            .high { background-color: #f8d7da; color: #721c24; }
+            .medium { background-color: #fff3cd; color: #856404; }
+            .low { background-color: #d4edda; color: #155724; }
+            .informational { background-color: #d1ecf1; color: #0c5460; }
+            .findings-content { display: none; padding: 10px; animation: slide-down 0.3s ease-out; }
+            .finding { padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; background-color: #f9f9f9; }
+            .file, .line, .description, .fix, .duplicate-label { margin: 5px 0; }
+            .expandable { cursor: pointer; color: #007bff; text-decoration: underline; }
+            pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; white-space: pre-wrap; }
+            .pagination { text-align: center; margin: 20px; }
+            .pagination button { margin: 0 5px; padding: 8px 16px; cursor: pointer; font-size: 16px; }
+            .hidden { display: none; }
+
+            /* Icon styles */
+            .icon { margin-right: 8px; font-weight: bold; }
+
+            /* Animation for collapsible sections */
+            @keyframes slide-down {
+                from { opacity: 0; max-height: 0; }
+                to { opacity: 1; max-height: 1000px; }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="logo">GuardTrex</div>
+            <h1 class="report-title">Security Scan Report</h1>
+        </header>
+
+        <div class="summary">
+            <span class="summary-item high"><span class="icon">🔴</span>High: {{ sorted_findings['High'] | length }}</span>
+            <span class="summary-item medium"><span class="icon">🟠</span>Medium: {{ sorted_findings['Medium'] | length }}</span>
+            <span class="summary-item low"><span class="icon">🟢</span>Low: {{ sorted_findings['Low'] | length }}</span>
+            <span class="summary-item informational"><span class="icon">🔵</span>Informational: {{ sorted_findings['Informational'] | length }}</span>
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="search" class="search-box" placeholder="Search by file, description, or fix...">
+            <select id="severity-filter" class="filter" title="Filter by severity">
+                <option value="all">All Severities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+                <option value="Informational">Informational</option>
+            </select>
+            <select id="sort" class="sort" title="Sort findings">
+                <option value="severity">Sort by Severity</option>
+                <option value="alphabetical">Sort Alphabetically</option>
+            </select>
+        </div>
+
+        <div id="findings-container">
+            {% for severity in ['High', 'Medium', 'Low', 'Informational'] %}
+            <div class="severity-section {{ severity.lower() }}">
+                <div class="section-title {{ severity.lower() }}" onclick="toggleSection(this)">
+                    <span><span class="icon"></span>{{ severity.upper() }} SEVERITY</span>
+                </div>
+                <div class="findings-content">
+                    {% for unique_finding in sorted_findings[severity] %}
+                    <div class="finding" data-severity="{{ severity }}" data-description="{{ unique_finding['finding']['description'] }}" data-count="{{ unique_finding['count'] }}">
+                        <div class="file"><strong>File:</strong> {{ unique_finding['finding']['file'] }} <span class="duplicate-label">(Found {{ unique_finding['count'] }} times)</span></div>
+                        <div class="line"><strong>Line:</strong> {{ unique_finding['finding']['line'] }}</div>
+                        <div class="description"><strong>Description:</strong> {{ unique_finding['finding']['description'] }}</div>
+                        <div class="fix"><strong>Suggested Fix:</strong> {{ unique_finding['finding']['fix_suggestion'] }}</div>
+                        <div class="expandable" onclick="toggleSnippet(this)">Show Code Snippet</div>
+                        <pre class="code-snippet hidden">{{ unique_finding['finding']['snippet'] }}</pre>
+                    </div>
+                    {% else %}
+                    <div class="finding">No findings for this severity.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="pagination">
+            <button onclick="prevPage()">Previous</button>
+            <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+            <button onclick="nextPage()">Next</button>
+        </div>
+
+        <script>
+            let currentPage = 1;
+            const findingsPerPage = 10;
+            const findings = Array.from(document.querySelectorAll('.finding'));
+
+            function updatePagination() {
+                const totalPages = Math.ceil(findings.filter(f => !f.classList.contains('hidden')).length / findingsPerPage);
+                document.getElementById('total-pages').innerText = totalPages || 1;
+                document.getElementById('current-page').innerText = currentPage;
+            }
+
+            function showPage(page) {
+                const start = (page - 1) * findingsPerPage;
+                const end = start + findingsPerPage;
+
+                findings.forEach((finding, index) => {
+                    finding.classList.toggle('hidden', index < start || index >= end);
+                });
+                updatePagination();
+            }
+
+            function applyFilters() {
+                const searchQuery = document.getElementById('search').value.toLowerCase();
+                const severityFilter = document.getElementById('severity-filter').value;
+
+                findings.forEach(finding => {
+                    const matchesSearch = finding.querySelector('.description').innerText.toLowerCase().includes(searchQuery);
+                    const matchesSeverity = severityFilter === 'all' || finding.dataset.severity === severityFilter;
+                    finding.classList.toggle('hidden', !(matchesSearch && matchesSeverity));
+                });
+
+                currentPage = 1;
+                showPage(currentPage);
+            }
+
+            function toggleSnippet(element) {
+                const snippet = element.nextElementSibling;
+                snippet.classList.toggle('hidden');
+                element.textContent = snippet.classList.contains('hidden') ? 'Show Code Snippet' : 'Hide Code Snippet';
+            }
+
+            function toggleSection(element) {
+                const content = element.nextElementSibling;
+                content.style.display = content.style.display === 'none' ? 'block' : 'none';
+            }
+
+            document.getElementById('search').addEventListener('input', applyFilters);
+            document.getElementById('severity-filter').addEventListener('change', applyFilters);
+
+            // Initialize
+            applyFilters();
+            showPage(currentPage);
+        </script>
+    </body>
+    </html>
+    """)
+
+    rendered_html = html_template.render(sorted_findings=sorted_findings)
+
+    # Write to file with UTF-8 encoding to handle Unicode characters
+    with open(filename, 'w', encoding='utf-8') as file:
+        file.write(rendered_html)
+
+    print(f"HTML report generated: {filename}")
+
 def main():
     """Main function to parse CLI arguments and run the scan."""
     parser = argparse.ArgumentParser(description="Scan codebase for security vulnerabilities.")
     parser.add_argument('directory', type=str, help='Path to the directory to scan')
-    parser.add_argument('--format', choices=['html', 'csv'], default='csv', help='Output report format')
+    parser.add_argument('--format', choices=['html', 'csv', 'both'], default='both', help='Output report format')
     args = parser.parse_args()
 
     previous_hashes = load_previous_hashes()
     findings = scan_directory(args.directory, previous_hashes)
 
+    # Print findings in console for quick view
     print_findings(findings)
-
     print(f"Total findings: {len(findings)}")
 
-    if args.format == 'csv':
+    # Export findings based on selected format
+    if args.format == 'csv' or args.format == 'both':
         export_to_csv(findings)
-    print("Scan complete. Results are saved in the specified format.")
+        print("CSV report generated as 'security_scan_report.csv'.")
+
+    if args.format == 'html' or args.format == 'both':
+        export_to_html(findings)
+        print("HTML report generated as 'security_scan_report.html'.")
+
+    print("Scan complete. Reports are saved in the specified format(s).")
 
 if __name__ == "__main__":
     main()
