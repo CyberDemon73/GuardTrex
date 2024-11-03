@@ -71,6 +71,10 @@ All scanning activities and any errors encountered are logged in `security_scan.
 8. **Debugging Information**: Detects debugging flags and localhost URLs.
 9. **IP Address Exposure**: Warns about exposed IP addresses in code.
 
+## Illustrating Diagram
+
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Diagram.svg" alt="Diagram" width="500">
+
 ## Contribution
 
 Contributions are welcome! To add new patterns or improve functionality, submit a pull request.
