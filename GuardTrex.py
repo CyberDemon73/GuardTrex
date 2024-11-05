@@ -7,6 +7,7 @@ import yaml
 import xml.etree.ElementTree as ET
 from colorama import Fore, Style, init
 from lxml import etree
+import html
 from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor
 import argparse
@@ -642,27 +643,52 @@ CACHE_FILE = 'scan_cache.txt'
 IGNORE_LIST = ['node_modules', '.git', '__pycache__']
 
 def calculate_file_hash(file_path):
-    """Calculate MD5 hash of a file for change detection."""
+    """Calculate MD5 hash of a file for change detection, handling errors gracefully."""
     hasher = hashlib.md5()
-    with open(file_path, 'rb') as f:
-        hasher.update(f.read())
-    return hasher.hexdigest()
+    try:
+        with open(file_path, 'rb') as f:
+            hasher.update(f.read())
+        return hasher.hexdigest()
+    except FileNotFoundError:
+        logging.error(f"File not found for hashing: {file_path}")
+    except PermissionError:
+        logging.error(f"Permission denied when accessing file: {file_path}")
+    except Exception as e:
+        logging.error(f"Unexpected error calculating hash for file {file_path}: {e}")
+    return None  # Return None if hash calculation fails
 
 def load_previous_hashes():
-    """Load previously calculated hashes for incremental scan."""
+    """Load previously calculated hashes for incremental scan, handling file errors."""
     hashes = {}
     if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, 'r') as f:
-            for line in f:
-                file_path, file_hash = line.strip().split(',')
-                hashes[file_path] = file_hash
+        try:
+            with open(CACHE_FILE, 'r') as f:
+                for line in f:
+                    try:
+                        file_path, file_hash = line.strip().split(',')
+                        hashes[file_path] = file_hash
+                    except ValueError:
+                        logging.warning(f"Invalid line format in cache file: {line.strip()}")
+        except FileNotFoundError:
+            logging.error(f"Cache file not found: {CACHE_FILE}")
+        except PermissionError:
+            logging.error(f"Permission denied when accessing cache file: {CACHE_FILE}")
+        except Exception as e:
+            logging.error(f"Unexpected error loading hashes from cache file {CACHE_FILE}: {e}")
+    else:
+        logging.info(f"Cache file {CACHE_FILE} does not exist. Starting with empty hash list.")
     return hashes
 
 def save_current_hashes(hashes):
-    """Save current file hashes after scanning."""
-    with open(CACHE_FILE, 'w') as f:
-        for file_path, file_hash in hashes.items():
-            f.write(f"{file_path},{file_hash}\n")
+    """Save current file hashes after scanning, handling file errors."""
+    try:
+        with open(CACHE_FILE, 'w') as f:
+            for file_path, file_hash in hashes.items():
+                f.write(f"{file_path},{file_hash}\n")
+    except PermissionError:
+        logging.error(f"Permission denied when trying to write to cache file: {CACHE_FILE}")
+    except Exception as e:
+        logging.error(f"Unexpected error saving hashes to cache file {CACHE_FILE}: {e}")
 
 def scan_file(file_path: str, previous_hashes, current_hashes) -> List[Dict[str, str]]:
     """Scan a file for regex patterns and return matches with line number, content, severity, and fix suggestion."""
@@ -680,58 +706,61 @@ def scan_file(file_path: str, previous_hashes, current_hashes) -> List[Dict[str,
             for line_number, line in enumerate(file, start=1):
                 # Data Flow Analysis (Taint Tracking)
                 for pattern, description, severity, fix_suggestion in PATTERNS:
-                    if pattern.search(line):
-                        if "Sensitive Data Declaration" in description:
-                            # Track sensitive variable assignment
-                            var_match = re.search(r'(\w+)\s*=', line)
-                            if var_match:
-                                sensitive_vars.append(var_match.group(1))
-                        
-                        elif "Sensitive Data in External Requests" in description:
-                            # Check if any tracked sensitive variable is used in external requests
-                            for var in sensitive_vars:
-                                if var in line:
-                                    matches.append({
-                                        'file': file_path,
-                                        'line': line_number,
-                                        'content': line.strip(),
-                                        'description': 'Sensitive Data Sent in External Request',
-                                        'severity': 'High',
-                                        'fix_suggestion': 'Ensure sensitive data is secured before external requests.',
-                                        'snippet': get_code_snippet(file_path, line_number)
-                                    })
+                    try:
+                        if pattern.search(line):
+                            if "Sensitive Data Declaration" in description:
+                                # Track sensitive variable assignment
+                                var_match = re.search(r'(\w+)\s*=', line)
+                                if var_match:
+                                    sensitive_vars.append(var_match.group(1))
 
-                        elif "Sensitive Data in Logs" in description:
-                            # Check if any tracked sensitive variable is used in logging
-                            for var in sensitive_vars:
-                                if var in line:
-                                    matches.append({
-                                        'file': file_path,
-                                        'line': line_number,
-                                        'content': line.strip(),
-                                        'description': 'Sensitive Data Logged',
-                                        'severity': 'High',
-                                        'fix_suggestion': 'Do not log sensitive data.',
-                                        'snippet': get_code_snippet(file_path, line_number)
-                                    })
+                            elif "Sensitive Data in External Requests" in description:
+                                # Check if any tracked sensitive variable is used in external requests
+                                for var in sensitive_vars:
+                                    if var in line:
+                                        matches.append({
+                                            'file': file_path,
+                                            'line': line_number,
+                                            'content': line.strip(),
+                                            'description': 'Sensitive Data Sent in External Request',
+                                            'severity': 'High',
+                                            'fix_suggestion': 'Ensure sensitive data is secured before external requests.',
+                                            'snippet': get_code_snippet(file_path, line_number)
+                                        })
 
-                        else:
-                            snippet = get_code_snippet(file_path, line_number)
-                            matches.append({
-                                'file': file_path,
-                                'line': line_number,
-                                'content': line.strip(),
-                                'description': description,
-                                'severity': severity,
-                                'fix_suggestion': fix_suggestion,
-                                'snippet': snippet
-                            })
+                            elif "Sensitive Data in Logs" in description:
+                                # Check if any tracked sensitive variable is used in logging
+                                for var in sensitive_vars:
+                                    if var in line:
+                                        matches.append({
+                                            'file': file_path,
+                                            'line': line_number,
+                                            'content': line.strip(),
+                                            'description': 'Sensitive Data Logged',
+                                            'severity': 'High',
+                                            'fix_suggestion': 'Do not log sensitive data.',
+                                            'snippet': get_code_snippet(file_path, line_number)
+                                        })
+
+                            else:
+                                snippet = get_code_snippet(file_path, line_number)
+                                matches.append({
+                                    'file': file_path,
+                                    'line': line_number,
+                                    'content': line.strip(),
+                                    'description': description,
+                                    'severity': severity,
+                                    'fix_suggestion': fix_suggestion,
+                                    'snippet': snippet
+                                })
+                    except re.error as re_err:
+                        logging.warning(f"Regex error for pattern '{pattern}' in file {file_path} at line {line_number}: {re_err}")
     except Exception as e:
         logging.error(f"Error reading file {file_path}: {e}")
     return matches
 
 def get_code_snippet(file_path, line_number, context=3):
-    """Return code snippet around a matched line for context."""
+    """Return code snippet around a matched line for context, handling file errors."""
     snippet = []
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
@@ -740,11 +769,11 @@ def get_code_snippet(file_path, line_number, context=3):
             end = min(line_number + context, len(lines))
             snippet = ''.join(lines[start:end])
     except Exception as e:
-        logging.error(f"Error getting snippet from {file_path}: {e}")
+        logging.error(f"Error getting snippet from {file_path} at line {line_number}: {e}")
     return snippet
 
 def scan_pom(file_path: str):
-    """Parse pom.xml file to extract dependencies and log them with dependency tree analysis."""
+    """Parse pom.xml file to extract dependencies and log them with dependency tree analysis, handling parsing errors."""
     try:
         tree = etree.parse(file_path)
         dependencies = tree.xpath('//dependency')
@@ -753,11 +782,13 @@ def scan_pom(file_path: str):
             artifact_id = dep.findtext('artifactId', 'Unknown')
             version = dep.findtext('version', 'Unknown')
             logging.info(f"Dependency in {file_path}: Group: {group_id}, Artifact: {artifact_id}, Version: {version}")
+    except etree.XMLSyntaxError as xml_err:
+        logging.error(f"XML syntax error parsing pom.xml file {file_path}: {xml_err}")
     except Exception as e:
-        logging.error(f"Error parsing pom.xml file {file_path}: {e}")
+        logging.error(f"Unexpected error parsing pom.xml file {file_path}: {e}")
 
 def get_code_snippet(file_path, line_number, context=3):
-    """Return code snippet around a matched line for context."""
+    """Return code snippet around a matched line for context, handling file errors."""
     snippet = []
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
@@ -765,32 +796,45 @@ def get_code_snippet(file_path, line_number, context=3):
             start = max(line_number - context - 1, 0)
             end = min(line_number + context, len(lines))
             snippet = ''.join(lines[start:end])
+    except FileNotFoundError:
+        logging.error(f"File not found when attempting to get snippet: {file_path}")
+    except PermissionError:
+        logging.error(f"Permission denied when attempting to read file: {file_path}")
     except Exception as e:
-        logging.error(f"Error getting snippet from {file_path}: {e}")
+        logging.error(f"Unexpected error getting snippet from {file_path} at line {line_number}: {e}")
     return snippet
 
 def track_data_flow():
+    """Track sensitive data flow and check for exposure in logs or external requests, with error handling."""
     results = []
     for file_path, var_data in sensitive_data_map.items():
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-            lines = file.readlines()
-            for var, start_line in var_data:
-                for i, line in enumerate(lines[start_line:], start=start_line):
-                    if var in line and re.search(r'(print|log|send|http)', line):
-                        snippet = get_code_snippet(file_path, i)
-                        results.append({
-                            'file': file_path,
-                            'line': i + 1,
-                            'content': line.strip(),
-                            'description': f'Sensitive data "{var}" potentially exposed in external request or logging',
-                            'severity': 'High',
-                            'fix_suggestion': 'Remove or secure the sensitive data before using in logs or external requests.',
-                            'snippet': snippet
-                        })
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+                lines = file.readlines()
+                for var, start_line in var_data:
+                    for i, line in enumerate(lines[start_line:], start=start_line):
+                        if var in line and re.search(r'(print|log|send|http)', line):
+                            snippet = get_code_snippet(file_path, i)
+                            results.append({
+                                'file': file_path,
+                                'line': i + 1,
+                                'content': line.strip(),
+                                'description': f'Sensitive data "{var}" potentially exposed in external request or logging',
+                                'severity': 'High',
+                                'fix_suggestion': 'Remove or secure the sensitive data before using in logs or external requests.',
+                                'snippet': snippet
+                            })
+        except FileNotFoundError:
+            logging.error(f"File not found for data flow analysis: {file_path}")
+        except PermissionError:
+            logging.error(f"Permission denied when reading file for data flow analysis: {file_path}")
+        except Exception as e:
+            logging.error(f"Unexpected error during data flow analysis in file {file_path}: {e}")
     return results
 
 # At the beginning of scan_directory
 def scan_directory(directory: str, previous_hashes):
+    """Scan a directory for security vulnerabilities, handling errors in directory traversal and file processing."""
     print(f"Scanning directory: {directory}")
     current_hashes = {}
     findings = []
@@ -798,271 +842,338 @@ def scan_directory(directory: str, previous_hashes):
     # Log each file being processed
     with ThreadPoolExecutor() as executor:
         futures = []
-        for root, _, files in os.walk(directory):
-            if any(ignored in root for ignored in IGNORE_LIST):
-                continue
-            for file in files:
-                file_path = os.path.join(root, file)
-                print(f"Scanning file: {file_path}")  # Log each file
-                if file.endswith(('.java', '.properties', '.xml', '.py', '.js', '.yml', '.json')):
-                    futures.append(executor.submit(scan_file, file_path, previous_hashes, current_hashes))
+        try:
+            for root, _, files in os.walk(directory):
+                if any(ignored in root for ignored in IGNORE_LIST):
+                    continue
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    print(f"Scanning file: {file_path}")  # Log each file
+                    if file.endswith(('.java', '.properties', '.xml', '.py', '.js', '.yml', '.json')):
+                        futures.append(executor.submit(scan_file, file_path, previous_hashes, current_hashes))
 
-        for future in futures:
-            findings.extend(future.result())
+            for future in futures:
+                try:
+                    findings.extend(future.result())
+                except Exception as e:
+                    logging.error(f"Error in thread execution for file scanning task: {e}")
+
+        except Exception as e:
+            logging.error(f"Unexpected error while scanning directory {directory}: {e}")
 
     save_current_hashes(current_hashes)
     findings.extend(track_data_flow())
     return findings
 
 def export_to_csv(findings, filename="security_scan_report.csv"):
-    """Export findings to a CSV report."""
-    with open(filename, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["File", "Line", "Description", "Severity", "Fix Suggestion", "Code Snippet"])
-        for finding in findings:
-            writer.writerow([finding['file'], finding['line'], finding['description'], finding['severity'], finding['fix_suggestion'], finding['snippet']])
+    """Export findings to a CSV report, with error handling for file operations."""
+    try:
+        with open(filename, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["File", "Line", "Description", "Severity", "Fix Suggestion", "Code Snippet"])
+            for finding in findings:
+                writer.writerow([
+                    finding.get('file', 'N/A'), 
+                    finding.get('line', 'N/A'), 
+                    finding.get('description', 'N/A'), 
+                    finding.get('severity', 'N/A'), 
+                    finding.get('fix_suggestion', 'N/A'), 
+                    finding.get('snippet', '').strip()
+                ])
+        logging.info(f"Findings successfully exported to {filename}")
+    except PermissionError:
+        logging.error(f"Permission denied when trying to write to CSV file: {filename}")
+    except Exception as e:
+        logging.error(f"Unexpected error exporting findings to CSV file {filename}: {e}")
 
 init(autoreset=True)  # Initialize colorama with auto-reset for colors
 
 def print_findings(findings):
+    """Print findings to the console with color coding based on severity, handling missing data gracefully."""
     for finding in findings:
-        severity = finding.get('severity', '').upper()
-        
-        # Assign color and indicator based on severity
-        if severity == "INFORMATIONAL":
-            color = Fore.BLUE
-            indicator = "[+]"
-        elif severity == "LOW":
-            color = Fore.GREEN
-            indicator = "[-]"
-        elif severity == "MEDIUM":
-            color = Fore.YELLOW
-            indicator = "[!]"
-        elif severity == "HIGH":
-            color = Fore.RED + Style.BRIGHT
-            indicator = "[x]"
-        else:
-            color = Fore.WHITE
-            indicator = "[?]"
-
-        # Print findings with color and formatting
-        print(f"{color}{indicator} {finding['description']}{Style.RESET_ALL}")
-        print(f"{color}    - File: {finding['file']}{Style.RESET_ALL}")
-        print(f"{color}    - Line: {finding['line']}{Style.RESET_ALL}")
-        print(f"{color}    - Severity: {severity}{Style.RESET_ALL}")
-        print(f"{color}    - Suggested Fix: {finding.get('fix_suggestion', 'N/A')}{Style.RESET_ALL}")
-        print(f"{color}    - Code Snippet: {finding.get('snippet', '').strip()}{Style.RESET_ALL}")
-        print()  # Blank line for readability
+        try:
+            severity = finding.get('severity', 'UNKNOWN').upper()
+            
+            # Assign color and indicator based on severity
+            if severity == "INFORMATIONAL":
+                color = Fore.BLUE
+                indicator = "[+]"
+            elif severity == "LOW":
+                color = Fore.GREEN
+                indicator = "[-]"
+            elif severity == "MEDIUM":
+                color = Fore.YELLOW
+                indicator = "[!]"
+            elif severity == "HIGH":
+                color = Fore.RED + Style.BRIGHT
+                indicator = "[x]"
+            else:
+                color = Fore.WHITE
+                indicator = "[?]"
+                
+            # Print findings with color and formatting
+            print(f"{color}{indicator} {finding.get('description', 'No description provided')}{Style.RESET_ALL}")
+            print(f"{color}    - File: {finding.get('file', 'Unknown file')}{Style.RESET_ALL}")
+            print(f"{color}    - Line: {finding.get('line', 'N/A')}{Style.RESET_ALL}")
+            print(f"{color}    - Severity: {severity}{Style.RESET_ALL}")
+            print(f"{color}    - Suggested Fix: {finding.get('fix_suggestion', 'N/A')}{Style.RESET_ALL}")
+            print(f"{color}    - Code Snippet: {finding.get('snippet', '').strip()}{Style.RESET_ALL}")
+            print()  # Blank line for readability
+        except Exception as e:
+            logging.error(f"Error printing finding: {e}")
+            print("An error occurred while displaying this finding. Check logs for details.")
 
 def export_to_html(findings, filename="security_scan_report.html"):
-    """Export findings to an HTML report with sorting, pagination, search, filter, collapsible sections, and logo."""
+    """Export findings to an HTML report with sorting, pagination, search, filter, and collapsible sections, with error handling and XSS protection."""
+    
     unique_findings = {}
-    for finding in findings:
-        key = (finding['file'], finding['line'], finding['description'])
-        if key not in unique_findings:
-            unique_findings[key] = {
-                "finding": finding,
-                "count": 1,
-                "locations": [(finding['file'], finding['line'])]
-            }
-        else:
-            unique_findings[key]["count"] += 1
-            unique_findings[key]["locations"].append((finding['file'], finding['line']))
+    try:
+        # Process findings for duplicates
+        for finding in findings:
+            key = (finding['file'], finding['line'], finding['description'])
+            if key not in unique_findings:
+                unique_findings[key] = {
+                    "finding": finding,
+                    "count": 1,
+                    "locations": [(finding['file'], finding['line'])]
+                }
+            else:
+                unique_findings[key]["count"] += 1
+                unique_findings[key]["locations"].append((finding['file'], finding['line']))
 
-    sorted_findings = defaultdict(list)
-    for unique_finding in unique_findings.values():
-        sorted_findings[unique_finding["finding"]['severity']].append(unique_finding)
+        # Organize findings by severity level
+        sorted_findings = defaultdict(list)
+        for unique_finding in unique_findings.values():
+            severity = unique_finding["finding"].get('severity', 'Informational')
+            sorted_findings[severity].append(unique_finding)
 
-    # HTML template with collapsible sections and color mapping
-    html_template = Template("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>GuardTrex Security Scan Report</title>
-        <style>
-            body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
-            header { display: flex; align-items: center; padding: 20px; border-bottom: 2px solid #ddd; }
-            .logo { font-size: 24px; font-weight: bold; color: #333; }
-            .report-title { font-size: 28px; color: #555; margin-left: auto; }
-            .controls { display: flex; justify-content: space-between; padding: 20px; }
-            .search-box { flex: 1; padding: 10px; font-size: 16px; }
-            .filter, .sort { margin-left: 10px; padding: 10px; font-size: 16px; }
-            .summary { padding: 20px; text-align: center; font-size: 18px; background-color: #f9f9f9; border-bottom: 2px solid #ddd; }
-            .summary-item { margin: 5px; font-weight: bold; }
-            .severity-section { margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
-            .section-title { padding: 15px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
-            .high { background-color: #f8d7da; color: #721c24; }
-            .medium { background-color: #fff3cd; color: #856404; }
-            .low { background-color: #d4edda; color: #155724; }
-            .informational { background-color: #d1ecf1; color: #0c5460; }
-            .findings-content { display: none; padding: 10px; animation: slide-down 0.3s ease-out; }
-            .finding { padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; background-color: #f9f9f9; }
-            .file, .line, .description, .fix, .duplicate-label { margin: 5px 0; }
-            .expandable { cursor: pointer; color: #007bff; text-decoration: underline; }
-            pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; white-space: pre-wrap; }
-            .pagination { text-align: center; margin: 20px; }
-            .pagination button { margin: 0 5px; padding: 8px 16px; cursor: pointer; font-size: 16px; }
-            .hidden { display: none; }
+        # HTML template for report generation
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>GuardTrex Security Scan Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; background-color: #f4f4f9; }
+                header { display: flex; align-items: center; padding: 20px; border-bottom: 2px solid #ddd; }
+                .logo { font-size: 24px; font-weight: bold; color: #333; }
+                .report-title { font-size: 28px; color: #555; margin-left: auto; }
+                .summary { padding: 20px; text-align: center; font-size: 18px; background-color: #f9f9f9; border-bottom: 2px solid #ddd; }
+                .summary-item { margin: 5px; font-weight: bold; }
+                .severity-section { margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; }
+                .section-title { padding: 15px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
+                .section-title::after { content: '▼'; margin-left: 8px; font-size: 14px; }
+                .section-title.collapsed::after { content: '▶'; }
+                .high { background-color: #f8d7da; color: #721c24; }
+                .medium { background-color: #fff3cd; color: #856404; }
+                .low { background-color: #d4edda; color: #155724; }
+                .informational { background-color: #d1ecf1; color: #0c5460; }
+                .findings-content { display: none; padding: 10px; }
+                .finding { padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; background-color: #f9f9f9; }
+                .file, .line, .description, .fix, .duplicate-label { margin: 5px 0; }
+                .expandable { cursor: pointer; color: #007bff; text-decoration: underline; }
+                pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; white-space: pre-wrap; }
+                .pagination { text-align: center; margin: 20px; }
+                .pagination button { margin: 0 5px; padding: 8px 16px; cursor: pointer; font-size: 16px; }
+                .hidden { display: none; }
 
-            /* Icon styles */
-            .icon { margin-right: 8px; font-weight: bold; }
+                /* Accessibility and UI enhancements */
+                .search-box { width: 80%; padding: 10px; font-size: 16px; margin: 20px; }
+                .filter, .sort { margin-left: 10px; padding: 10px; font-size: 16px; }
+                .controls { display: flex; justify-content: space-between; padding: 20px; }
+            </style>
+        </head>
+        <body>
+            <header>
+                <div class="logo">GuardTrex</div>
+                <h1 class="report-title">Security Scan Report</h1>
+            </header>
 
-            /* Animation for collapsible sections */
-            @keyframes slide-down {
-                from { opacity: 0; max-height: 0; }
-                to { opacity: 1; max-height: 1000px; }
-            }
-        </style>
-    </head>
-    <body>
-        <header>
-            <div class="logo">GuardTrex</div>
-            <h1 class="report-title">Security Scan Report</h1>
-        </header>
-
-        <div class="summary">
-            <span class="summary-item high"><span class="icon">🔴</span>High: {{ sorted_findings['High'] | length }}</span>
-            <span class="summary-item medium"><span class="icon">🟠</span>Medium: {{ sorted_findings['Medium'] | length }}</span>
-            <span class="summary-item low"><span class="icon">🟢</span>Low: {{ sorted_findings['Low'] | length }}</span>
-            <span class="summary-item informational"><span class="icon">🔵</span>Informational: {{ sorted_findings['Informational'] | length }}</span>
-        </div>
-        
-        <div class="controls">
-            <input type="text" id="search" class="search-box" placeholder="Search by file, description, or fix...">
-            <select id="severity-filter" class="filter" title="Filter by severity">
-                <option value="all">All Severities</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-                <option value="Informational">Informational</option>
-            </select>
-            <select id="sort" class="sort" title="Sort findings">
-                <option value="severity">Sort by Severity</option>
-                <option value="alphabetical">Sort Alphabetically</option>
-            </select>
-        </div>
-
-        <div id="findings-container">
-            {% for severity in ['High', 'Medium', 'Low', 'Informational'] %}
-            <div class="severity-section {{ severity.lower() }}">
-                <div class="section-title {{ severity.lower() }}" onclick="toggleSection(this)">
-                    <span><span class="icon"></span>{{ severity.upper() }} SEVERITY</span>
-                </div>
-                <div class="findings-content">
-                    {% for unique_finding in sorted_findings[severity] %}
-                    <div class="finding" data-severity="{{ severity }}" data-description="{{ unique_finding['finding']['description'] }}" data-count="{{ unique_finding['count'] }}">
-                        <div class="file"><strong>File:</strong> {{ unique_finding['finding']['file'] }} <span class="duplicate-label">(Found {{ unique_finding['count'] }} times)</span></div>
-                        <div class="line"><strong>Line:</strong> {{ unique_finding['finding']['line'] }}</div>
-                        <div class="description"><strong>Description:</strong> {{ unique_finding['finding']['description'] }}</div>
-                        <div class="fix"><strong>Suggested Fix:</strong> {{ unique_finding['finding']['fix_suggestion'] }}</div>
-                        <div class="expandable" onclick="toggleSnippet(this)">Show Code Snippet</div>
-                        <pre class="code-snippet hidden">{{ unique_finding['finding']['snippet'] }}</pre>
-                    </div>
-                    {% else %}
-                    <div class="finding">No findings for this severity.</div>
-                    {% endfor %}
-                </div>
+            <div class="summary">
+                <span class="summary-item high"><span class="icon">🔴</span>High: {{ sorted_findings['High'] | length }}</span>
+                <span class="summary-item medium"><span class="icon">🟠</span>Medium: {{ sorted_findings['Medium'] | length }}</span>
+                <span class="summary-item low"><span class="icon">🟢</span>Low: {{ sorted_findings['Low'] | length }}</span>
+                <span class="summary-item informational"><span class="icon">🔵</span>Informational: {{ sorted_findings['Informational'] | length }}</span>
             </div>
-            {% endfor %}
-        </div>
 
-        <div class="pagination">
-            <button onclick="prevPage()">Previous</button>
-            <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
-            <button onclick="nextPage()">Next</button>
-        </div>
+            <div class="controls">
+                <input type="text" id="search" class="search-box" placeholder="Search by file, description, or fix..." aria-label="Search findings">
+                <select id="severity-filter" class="filter" aria-label="Filter by severity">
+                    <option value="all">All Severities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                    <option value="Informational">Informational</option>
+                </select>
+                <select id="sort" class="sort" aria-label="Sort findings">
+                    <option value="severity">Sort by Severity</option>
+                    <option value="alphabetical">Sort Alphabetically</option>
+                </select>
+            </div>
 
-        <script>
-            let currentPage = 1;
-            const findingsPerPage = 10;
-            const findings = Array.from(document.querySelectorAll('.finding'));
+            <div id="findings-container">
+                {% for severity in ['High', 'Medium', 'Low', 'Informational'] %}
+                <div class="severity-section {{ severity.lower() }}">
+                    <div class="section-title {{ severity.lower() }}" onclick="toggleSection(this)">
+                        <span>{{ severity.upper() }} SEVERITY</span>
+                    </div>
+                    <div class="findings-content">
+                        {% for unique_finding in sorted_findings[severity] %}
+                        <div class="finding" data-severity="{{ severity }}" data-description="{{ unique_finding['finding']['description'] }}" data-count="{{ unique_finding['count'] }}">
+                            <div class="file"><strong>File:</strong> {{ unique_finding['finding']['file'] }}</div>
+                            <div class="line"><strong>Line:</strong> {{ unique_finding['finding']['line'] }}</div>
+                            <div class="description"><strong>Description:</strong> {{ unique_finding['finding']['description'] }}</div>
+                            <div class="fix"><strong>Suggested Fix:</strong> {{ unique_finding['finding']['fix_suggestion'] }}</div>
+                            <div class="expandable" onclick="toggleSnippet(this)">Show Code Snippet</div>
+                            <pre class="code-snippet hidden">{{ unique_finding['finding']['snippet'] | e }}</pre>
+                        </div>
+                        {% else %}
+                        <div class="finding">No findings for this severity.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
 
-            function updatePagination() {
-                const totalPages = Math.ceil(findings.filter(f => !f.classList.contains('hidden')).length / findingsPerPage);
-                document.getElementById('total-pages').innerText = totalPages || 1;
-                document.getElementById('current-page').innerText = currentPage;
-            }
+            <div class="pagination">
+                <button onclick="prevPage()" aria-label="Previous page">Previous</button>
+                <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+                <button onclick="nextPage()" aria-label="Next page">Next</button>
+            </div>
 
-            function showPage(page) {
-                const start = (page - 1) * findingsPerPage;
-                const end = start + findingsPerPage;
+            <script>
+                let currentPage = 1;
+                const findingsPerPage = 10;
+                const findings = Array.from(document.querySelectorAll('.finding'));
 
-                findings.forEach((finding, index) => {
-                    finding.classList.toggle('hidden', index < start || index >= end);
-                });
-                updatePagination();
-            }
+                function updatePagination() {
+                    const totalPages = Math.ceil(findings.filter(f => !f.classList.contains('hidden')).length / findingsPerPage);
+                    document.getElementById('total-pages').innerText = totalPages || 1;
+                    document.getElementById('current-page').innerText = currentPage;
+                }
 
-            function applyFilters() {
-                const searchQuery = document.getElementById('search').value.toLowerCase();
-                const severityFilter = document.getElementById('severity-filter').value;
+                function showPage(page) {
+                    const start = (page - 1) * findingsPerPage;
+                    const end = start + findingsPerPage;
 
-                findings.forEach(finding => {
-                    const matchesSearch = finding.querySelector('.description').innerText.toLowerCase().includes(searchQuery);
-                    const matchesSeverity = severityFilter === 'all' || finding.dataset.severity === severityFilter;
-                    finding.classList.toggle('hidden', !(matchesSearch && matchesSeverity));
-                });
+                    findings.forEach((finding, index) => {
+                        finding.classList.toggle('hidden', index < start || index >= end);
+                    });
+                    updatePagination();
+                }
 
-                currentPage = 1;
+                function applyFilters() {
+                    const searchQuery = document.getElementById('search').value.toLowerCase();
+                    const severityFilter = document.getElementById('severity-filter').value;
+
+                    findings.forEach(finding => {
+                        const matchesSearch = finding.querySelector('.description').innerText.toLowerCase().includes(searchQuery);
+                        const matchesSeverity = severityFilter === 'all' || finding.dataset.severity === severityFilter;
+                        finding.classList.toggle('hidden', !(matchesSearch && matchesSeverity));
+                    });
+
+                    currentPage = 1;
+                    showPage(currentPage);
+                }
+
+                function toggleSnippet(element) {
+                    const snippet = element.nextElementSibling;
+                    snippet.classList.toggle('hidden');
+                    element.textContent = snippet.classList.contains('hidden') ? 'Show Code Snippet' : 'Hide Code Snippet';
+                }
+
+                function toggleSection(element) {
+                    const content = element.nextElementSibling;
+                    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                    element.classList.toggle('collapsed');
+                }
+
+                document.getElementById('search').addEventListener('input', applyFilters);
+                document.getElementById('severity-filter').addEventListener('change', applyFilters);
+
+                applyFilters();
                 showPage(currentPage);
-            }
+            </script>
+        </body>
+        </html>
+        """)
 
-            function toggleSnippet(element) {
-                const snippet = element.nextElementSibling;
-                snippet.classList.toggle('hidden');
-                element.textContent = snippet.classList.contains('hidden') ? 'Show Code Snippet' : 'Hide Code Snippet';
-            }
 
-            function toggleSection(element) {
-                const content = element.nextElementSibling;
-                content.style.display = content.style.display === 'none' ? 'block' : 'none';
-            }
+        # Escape potentially harmful characters in findings before rendering
+        for finding in findings:
+            finding['file'] = html.escape(finding.get('file', 'Unknown file'))
+            finding['description'] = html.escape(finding.get('description', 'No description provided'))
+            finding['fix_suggestion'] = html.escape(finding.get('fix_suggestion', 'N/A'))
+            finding['snippet'] = html.escape(finding.get('snippet', '').strip())
 
-            document.getElementById('search').addEventListener('input', applyFilters);
-            document.getElementById('severity-filter').addEventListener('change', applyFilters);
+        rendered_html = html_template.render(sorted_findings=sorted_findings)
 
-            // Initialize
-            applyFilters();
-            showPage(currentPage);
-        </script>
-    </body>
-    </html>
-    """)
-
-    rendered_html = html_template.render(sorted_findings=sorted_findings)
-
-    # Write to file with UTF-8 encoding to handle Unicode characters
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write(rendered_html)
-
-    print(f"HTML report generated: {filename}")
+        # Write the rendered HTML to a file
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(rendered_html)
+        
+        print(f"HTML report generated: {filename}")
+        logging.info(f"HTML report successfully generated: {filename}")
+    except PermissionError:
+        logging.error(f"Permission denied when trying to write to HTML file: {filename}")
+        print("Error: Permission denied when trying to write the HTML report.")
+    except Exception as e:
+        logging.error(f"Unexpected error exporting findings to HTML file {filename}: {e}")
+        print("An unexpected error occurred while generating the HTML report.")
 
 def main():
-    """Main function to parse CLI arguments and run the scan."""
-    parser = argparse.ArgumentParser(description="Scan codebase for security vulnerabilities.")
-    parser.add_argument('directory', type=str, help='Path to the directory to scan')
-    parser.add_argument('--format', choices=['html', 'csv', 'both'], default='both', help='Output report format')
-    args = parser.parse_args()
+    """Main function to parse CLI arguments and run the scan with error handling."""
+    try:
+        parser = argparse.ArgumentParser(description="Scan codebase for security vulnerabilities.")
+        parser.add_argument('directory', type=str, help='Path to the directory to scan')
+        parser.add_argument('--format', choices=['html', 'csv', 'both'], default='both', help='Output report format')
+        args = parser.parse_args()
 
-    previous_hashes = load_previous_hashes()
-    findings = scan_directory(args.directory, previous_hashes)
+        # Load previous hashes and handle potential errors
+        try:
+            previous_hashes = load_previous_hashes()
+        except Exception as e:
+            logging.error(f"Error loading previous hashes: {e}")
+            print("Failed to load previous hashes. Continuing without previous hash data.")
+            previous_hashes = {}  # Use an empty dictionary if loading fails
 
-    # Print findings in console for quick view
-    print_findings(findings)
-    print(f"Total findings: {len(findings)}")
+        # Run the scan and handle potential errors
+        try:
+            findings = scan_directory(args.directory, previous_hashes)
+            print_findings(findings)
+            print(f"Total findings: {len(findings)}")
+        except Exception as e:
+            logging.error(f"Error scanning directory: {e}")
+            print("An error occurred during the scan. Please check the logs for more details.")
+            findings = []  # Use an empty list if scanning fails
 
-    # Export findings based on selected format
-    if args.format == 'csv' or args.format == 'both':
-        export_to_csv(findings)
-        print("CSV report generated as 'security_scan_report.csv'.")
+        # Export findings based on selected format with error handling for each format
+        if findings:
+            if args.format in ['csv', 'both']:
+                try:
+                    export_to_csv(findings)
+                    print("CSV report generated as 'security_scan_report.csv'.")
+                except Exception as e:
+                    logging.error(f"Error exporting to CSV: {e}")
+                    print("Failed to generate CSV report. Please check the logs for details.")
 
-    if args.format == 'html' or args.format == 'both':
-        export_to_html(findings)
-        print("HTML report generated as 'security_scan_report.html'.")
+            if args.format in ['html', 'both']:
+                try:
+                    export_to_html(findings)
+                    print("HTML report generated as 'security_scan_report.html'.")
+                except Exception as e:
+                    logging.error(f"Error exporting to HTML: {e}")
+                    print("Failed to generate HTML report. Please check the logs for details.")
+        else:
+            print("No findings to export.")
 
-    print("Scan complete. Reports are saved in the specified format(s).")
+        print("Scan complete. Reports are saved in the specified format(s).")
+
+    except Exception as e:
+        logging.error(f"Unexpected error in main function: {e}")
+        print("An unexpected error occurred. Please check the logs for more details.")
 
 if __name__ == "__main__":
     main()
