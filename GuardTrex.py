@@ -1123,57 +1123,144 @@ def export_to_html(findings, filename="security_scan_report.html"):
         logging.error(f"Unexpected error exporting findings to HTML file {filename}: {e}")
         print("An unexpected error occurred while generating the HTML report.")
 
+GUARDTREX_ASCII = """
+   ____ _   _   _    ____  ____ _____ ____  _______  __
+  / ___| | | | / \  |  _ \|  _ \_   _|  _ \| ____\ \/ /
+ | |  _| | | |/ _ \ | |_) | | | || | | |_) |  _|  \  / 
+ | |_| | |_| / ___ \|  _ <| |_| || | |  _ <| |___ /  \ 
+  \____|\___/_/   \_\_| \_\____/ |_| |_| \_\_____/_/\_\
+                                                       
+"""
+
 def main():
-    """Main function to parse CLI arguments and run the scan with error handling."""
-    try:
-        parser = argparse.ArgumentParser(description="Scan codebase for security vulnerabilities.")
-        parser.add_argument('directory', type=str, help='Path to the directory to scan')
-        parser.add_argument('--format', choices=['html', 'csv', 'both'], default='both', help='Output report format')
-        args = parser.parse_args()
+    """Main function to parse CLI arguments and run the scan."""
+    
+    # Display ASCII art and header
+    print(Fore.CYAN + Style.BRIGHT + GUARDTREX_ASCII)
+    print(Fore.CYAN + Style.BRIGHT + "="*55)
+    print(Fore.CYAN + Style.BRIGHT + "      Welcome to GuardTrex - Security Code Scanner")
+    print(Fore.CYAN + Style.BRIGHT + "="*55)
 
-        # Load previous hashes and handle potential errors
-        try:
-            previous_hashes = load_previous_hashes()
-        except Exception as e:
-            logging.error(f"Error loading previous hashes: {e}")
-            print("Failed to load previous hashes. Continuing without previous hash data.")
-            previous_hashes = {}  # Use an empty dictionary if loading fails
+    parser = argparse.ArgumentParser(
+        description="GuardTrex - Scan codebase for security vulnerabilities.",
+        epilog="Example usage: python GuardTrex.py <directory> --format both"
+    )
+    
+    parser.add_argument(
+        'directory', type=str, nargs='?', 
+        help='Path to the directory to scan. If not provided, you will be prompted.'
+    )
+    
+    parser.add_argument(
+        '--format', choices=['html', 'csv', 'both'], default=None,
+        help='Output report format (default: both)'
+    )
+    
+    parser.add_argument(
+        '--interactive', action='store_true',
+        help='Run in interactive mode for a guided user journey.'
+    )
+    
+    args = parser.parse_args()
 
-        # Run the scan and handle potential errors
-        try:
-            findings = scan_directory(args.directory, previous_hashes)
-            print_findings(findings)
-            print(f"Total findings: {len(findings)}")
-        except Exception as e:
-            logging.error(f"Error scanning directory: {e}")
-            print("An error occurred during the scan. Please check the logs for more details.")
-            findings = []  # Use an empty list if scanning fails
+    # Run interactively if selected
+    if args.interactive:
+        print(Fore.CYAN + "\n" + "-"*55)
+        print(Fore.CYAN + "Interactive Setup - Let's Configure Your Scan\n" + "-"*55)
+        
+        # Directory selection with validation
+        if not args.directory:
+            print(Fore.CYAN + "Step 1: Select Directory to Scan")
+            args.directory = input(Fore.YELLOW + "Enter the path to the directory (or press Enter for current directory): ").strip() or '.'
+        
+        if not os.path.isdir(args.directory):
+            print(Fore.RED + f"Error: '{args.directory}' is not a valid directory. Please restart and try again.")
+            return
 
-        # Export findings based on selected format with error handling for each format
-        if findings:
-            if args.format in ['csv', 'both']:
-                try:
-                    export_to_csv(findings)
-                    print("CSV report generated as 'security_scan_report.csv'.")
-                except Exception as e:
-                    logging.error(f"Error exporting to CSV: {e}")
-                    print("Failed to generate CSV report. Please check the logs for details.")
-
-            if args.format in ['html', 'both']:
-                try:
-                    export_to_html(findings)
-                    print("HTML report generated as 'security_scan_report.html'.")
-                except Exception as e:
-                    logging.error(f"Error exporting to HTML: {e}")
-                    print("Failed to generate HTML report. Please check the logs for details.")
+        # Report format selection with menu
+        print(Fore.CYAN + "\nStep 2: Choose Report Format")
+        print(Fore.YELLOW + "1. HTML")
+        print(Fore.YELLOW + "2. CSV")
+        print(Fore.YELLOW + "3. Both HTML and CSV")
+        format_choice = input(Fore.YELLOW + "Choose a format (1/2/3): ").strip()
+        
+        if format_choice == "1":
+            args.format = "html"
+        elif format_choice == "2":
+            args.format = "csv"
+        elif format_choice == "3":
+            args.format = "both"
         else:
-            print("No findings to export.")
+            print(Fore.RED + "Invalid choice. Defaulting to both HTML and CSV.")
+            args.format = "both"
+    
+    # Confirm directory validity outside interactive mode
+    if not args.directory:
+        print(Fore.RED + "Error: You must specify a directory to scan.")
+        parser.print_help()
+        return
+    elif not os.path.isdir(args.directory):
+        print(Fore.RED + f"Error: '{args.directory}' is not a valid directory.")
+        return
 
-        print("Scan complete. Reports are saved in the specified format(s).")
+    # Start scan confirmation
+    print(Fore.GREEN + f"\nReady to scan directory: {args.directory}")
+    print(Fore.GREEN + f"Report format selected: {args.format.upper()}")
+    start_scan = input(Fore.CYAN + "Proceed with scan? (y/n): ").strip().lower()
+    if start_scan != 'y':
+        print(Fore.BLUE + "Scan canceled by user.")
+        return
 
+    # Initialize previous hashes and prompt for rescan if they exist
+    print(Fore.CYAN + "\nLoading previous scan data...")
+    try:
+        previous_hashes = load_previous_hashes()
+        
+        if previous_hashes:
+            print(Fore.YELLOW + "Previous scan hashes detected.")
+            rescan_choice = input(Fore.CYAN + "Do you want to perform a new scan? (y/n): ").strip().lower()
+            
+            if rescan_choice != 'y':
+                print(Fore.BLUE + "Skipping the scan as per user choice.")
+                return
     except Exception as e:
-        logging.error(f"Unexpected error in main function: {e}")
-        print("An unexpected error occurred. Please check the logs for more details.")
+        logging.error(Fore.RED + f"Error loading previous hashes: {e}")
+        print(Fore.RED + "Failed to load previous hashes. Continuing without previous hash data.")
+        previous_hashes = {}  # Use an empty dictionary if loading fails
+
+    # Run the scan
+    print(Fore.CYAN + "\nStarting scan..." + Fore.RESET)
+    try:
+        findings = scan_directory(args.directory, previous_hashes)
+        print(Fore.GREEN + "Scan completed successfully.")
+    except Exception as e:
+        logging.error(Fore.RED + f"Error during scanning process: {e}")
+        print(Fore.RED + "An unexpected error occurred during the scan. Please check the logs for details.")
+        return
+
+    # Display findings in console
+    print(Fore.CYAN + "\nScan Results:\n" + "-"*55)
+    print_findings(findings)
+    print(Fore.GREEN + f"\nTotal findings: {len(findings)}\n")
+
+    # Export findings in the selected format(s)
+    print(Fore.CYAN + "\nGenerating reports...\n" + "-"*55)
+    try:
+        if args.format in ['csv', 'both']:
+            export_to_csv(findings)
+            print(Fore.GREEN + "CSV report generated: 'security_scan_report.csv'")
+
+        if args.format in ['html', 'both']:
+            export_to_html(findings)
+            print(Fore.GREEN + "HTML report generated: 'security_scan_report.html'")
+    except Exception as e:
+        logging.error(Fore.RED + f"Error generating report: {e}")
+        print(Fore.RED + "An error occurred while generating the report. Check logs for details.")
+    
+    # Completion message
+    print(Fore.CYAN + "\n" + "="*55)
+    print(Fore.CYAN + "Scan complete. Reports are saved in the specified format(s).")
+    print(Fore.CYAN + "="*55)
 
 if __name__ == "__main__":
     main()
