@@ -28,7 +28,7 @@ GuardTrex is a comprehensive security scanning tool designed to identify and rep
 
 Run the tool with the following command:
 ```bash
-python guardtrex.py <directory> [--format csv|html]
+python guardtrex.py <directory> [--format csv|html|both]
 ```
 
 ### Arguments
