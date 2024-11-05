@@ -974,7 +974,7 @@ def export_to_html(findings, filename="security_scan_report.html"):
                 .finding { padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; background-color: #f9f9f9; }
                 .file, .line, .description, .fix, .duplicate-label { margin: 5px 0; }
                 .expandable { cursor: pointer; color: #007bff; text-decoration: underline; }
-                pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; white-space: pre-wrap; }
+                pre.sandboxed { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; white-space: pre-wrap; color: #444; }
                 .pagination { text-align: center; margin: 20px; }
                 .pagination button { margin: 0 5px; padding: 8px 16px; cursor: pointer; font-size: 16px; }
                 .hidden { display: none; }
@@ -1022,12 +1022,12 @@ def export_to_html(findings, filename="security_scan_report.html"):
                     <div class="findings-content">
                         {% for unique_finding in sorted_findings[severity] %}
                         <div class="finding" data-severity="{{ severity }}" data-description="{{ unique_finding['finding']['description'] }}" data-count="{{ unique_finding['count'] }}">
-                            <div class="file"><strong>File:</strong> {{ unique_finding['finding']['file'] }}</div>
+                            <div class="file"><strong>File:</strong> {{ unique_finding['finding']['file'] | e }}</div>
                             <div class="line"><strong>Line:</strong> {{ unique_finding['finding']['line'] }}</div>
-                            <div class="description"><strong>Description:</strong> {{ unique_finding['finding']['description'] }}</div>
-                            <div class="fix"><strong>Suggested Fix:</strong> {{ unique_finding['finding']['fix_suggestion'] }}</div>
+                            <div class="description"><strong>Description:</strong> {{ unique_finding['finding']['description'] | e }}</div>
+                            <div class="fix"><strong>Suggested Fix:</strong> {{ unique_finding['finding']['fix_suggestion'] | e }}</div>
                             <div class="expandable" onclick="toggleSnippet(this)">Show Code Snippet</div>
-                            <pre class="code-snippet hidden">{{ unique_finding['finding']['snippet'] | e }}</pre>
+                            <pre class="code-snippet sandboxed hidden">{{ unique_finding['finding']['snippet'] }}</pre>
                         </div>
                         {% else %}
                         <div class="finding">No findings for this severity.</div>
