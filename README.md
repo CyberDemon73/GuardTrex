@@ -167,6 +167,11 @@ All scanning activities and any errors encountered are logged in `security_scan.
      - `authorization_header|auth_header` - Hardcoded Authorization Header (High)
    - **Access and Refresh Tokens**
      - `access_token|refresh_token` - Hardcoded Access or Refresh Token (High)
+---
+
+## Demonestration Image
+
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Demo.png" alt="Demo-Image" width="1000">
 
 ## Illustrating Diagram
 
