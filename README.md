@@ -171,11 +171,20 @@ All scanning activities and any errors encountered are logged in `security_scan.
 
 ## Demonestration Image
 
-<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Demo.png" alt="Demo-Image" width="1000">
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Images/Demo.png" alt="Demo-Image" width="1000">
+
+
+## Report Sample Image
+
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Images/Report-Sample-1.png" alt="Report-Sample" width="1000">
+
+## Report Sample Image
+
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Images/Report-Sample.png" alt="Report-Sample" width="1000">
 
 ## Illustrating Diagram
 
-<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Diagram.svg" alt="Diagram" width="1000">
+<img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Images/Diagram.svg" alt="Diagram" width="1000">
 
 ## Contribution
 
