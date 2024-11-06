@@ -33,13 +33,15 @@ python guardtrex.py <directory> [--format csv|html|both]
 
 ### Arguments
 
+- `-h, --help`: Show this help message and exit
+- `--interactive`: Run in interactive mode for a guided user journey..
 - `<directory>`: Path to the directory to scan.
 - `--format`: Format of the output report. Options are `csv` (default) or `html`.
 
 ### Example
 
 ```bash
-python guardtrex.py ./project_directory --format csv
+python3 GuardTrex-Category_Selection.py [-h] [--format {html,csv,both}] [--interactive] [directory]
 ```
 
 ## Output
@@ -172,7 +174,6 @@ All scanning activities and any errors encountered are logged in `security_scan.
 ## Demonestration Image
 
 <img src="https://raw.githubusercontent.com/CyberDemon73/GuardTrex/main/Images/Demo.png" alt="Demo-Image" width="1000">
-
 
 ## Report Sample Image
 
