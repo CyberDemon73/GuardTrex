@@ -44,9 +44,7 @@ sensitive_data_map = {}
 PATTERNS = {
     "Actuator Endpoints": [
         (re.compile(r'management\.endpoints\.web\.exposure\.include\s*=\s*\*', re.IGNORECASE), 
-         'All Actuator Endpoints Exposed', 'High', 'Limit exposure of Actuator endpoints to necessary endpoints only, and secure with authentication.'),
-        (re.compile(r'management\.endpoints\.web\.exposure\.include\s*=\s*(health|info)', re.IGNORECASE), 
-         'Exposed Actuator Endpoint (health/info)', 'Medium', 'Ensure that exposed endpoints are not disclosing sensitive information.')
+         'All Actuator Endpoints Exposed', 'High', 'Limit exposure of Actuator endpoints to necessary endpoints only, and secure with authentication.')
     ],
     
     "CSRF Protection": [
@@ -106,14 +104,138 @@ PATTERNS = {
         (re.compile(r'(?i)(db[_-]?password|database[_-]?password)[\s:=]+[\'"]?.{6,}[\'"]?'), 
          'Hardcoded Database Password', 'High', 'Store database passwords securely in environment variables.'),
         (re.compile(r'mongodb:\/\/(.*?):(.*?)@', re.IGNORECASE), 
-         'MongoDB Connection String with Credentials', 'High', 'Store MongoDB credentials securely in environment variables.')
+         'MongoDB Connection String with Credentials', 'High', 'Store MongoDB credentials securely in environment variables.'),
+        (re.compile(r'postgresql:\/\/[^\s]+', re.IGNORECASE), 
+         'PostgreSQL Connection String', 'High', 'Use environment variables for PostgreSQL connection strings.'),
+        (re.compile(r'mysql:\/\/[^\s]+:[^\s]+@', re.IGNORECASE), 
+         'MySQL Connection String with Credentials', 'High', 'Avoid storing MySQL credentials directly in the connection string; use secure configurations.'),
+        (re.compile(r'mssql:\/\/[^\s]+', re.IGNORECASE), 
+         'MSSQL Connection String', 'High', 'Use environment variables for MSSQL connection strings.'),
+        (re.compile(r'jdbc:oracle:[^\s]+', re.IGNORECASE), 
+         'Oracle JDBC Connection String', 'High', 'Move Oracle connection strings to environment variables.'),
+        (re.compile(r'sqlite:\/\/\/?[\w\/\-\.]+\.db', re.IGNORECASE), 
+         'SQLite Connection String with File Path', 'Medium', 'Secure SQLite database paths and avoid exposing them in public code.'),
+        (re.compile(r'(?i)dynamodb:\/\/(.*?):(.*?)@', re.IGNORECASE), 
+         'DynamoDB Connection String with Credentials', 'High', 'Use AWS IAM roles instead of hardcoded credentials for DynamoDB.'),
+        (re.compile(r'redis:\/\/:[^\s]+@', re.IGNORECASE), 
+         'Redis Connection String with Password', 'High', 'Avoid hardcoding Redis passwords; use secure configurations.'),
+        (re.compile(r'elasticsearch:\/\/[^\s]+', re.IGNORECASE), 
+         'Elasticsearch Connection String', 'High', 'Move Elasticsearch connection strings to secure configurations.'),
+        (re.compile(r'neo4j:\/\/[^\s]+:[^\s]+@', re.IGNORECASE), 
+         'Neo4j Connection String with Credentials', 'High', 'Use secure storage for Neo4j credentials.'),
+        (re.compile(r'couchdb:\/\/[^\s]+', re.IGNORECASE), 
+         'CouchDB Connection String', 'Medium', 'Consider securing CouchDB connection strings in environment variables.'),
+        (re.compile(r'influxdb:\/\/[^\s]+', re.IGNORECASE), 
+         'InfluxDB Connection String', 'Medium', 'Ensure InfluxDB connection strings are managed securely.'),
+        (re.compile(r'cassandra:\/\/[^\s]+', re.IGNORECASE), 
+         'Cassandra Connection String', 'High', 'Avoid exposing Cassandra connection strings directly; use secure storage.'),
+        (re.compile(r'ftp:\/\/[^\s]+:[^\s]+@', re.IGNORECASE), 
+         'FTP Connection with Credentials', 'High', 'Avoid embedding FTP credentials directly in code; use secure storage methods.'),
+        (re.compile(r'mongodb\+srv:\/\/[^\s]+', re.IGNORECASE), 
+         'MongoDB SRV Connection String', 'High', 'Move MongoDB SRV connection strings to environment variables.'),
+        (re.compile(r'amqp:\/\/[^\s]+', re.IGNORECASE), 
+         'RabbitMQ Connection String', 'Medium', 'Use secure configurations for RabbitMQ connections.'),
+        (re.compile(r'cassandra:\/\/[^\s]+:[^\s]+@', re.IGNORECASE), 
+         'Cassandra Connection with Credentials', 'High', 'Avoid hardcoding Cassandra credentials in connection strings.'),
+        (re.compile(r'cloudsql:\/\/[^\s]+', re.IGNORECASE), 
+         'Google CloudSQL Connection String', 'High', 'Store Google CloudSQL connection strings securely in environment variables.'),
+        (re.compile(r'mariadb:\/\/[^\s]+', re.IGNORECASE), 
+         'MariaDB Connection String', 'High', 'Avoid exposing MariaDB connection strings directly; use secure configurations.'),
+        (re.compile(r'spring\.datasource\.url\s*=\s*".*"', re.IGNORECASE), 
+         'Database Connection URL Exposed', 'High', 'Ensure database connection details are stored securely and not exposed in configuration files.'),
+        (re.compile(r'spring\.datasource\.username\s*=\s*".*"', re.IGNORECASE), 
+         'Database Username Exposed', 'High', 'Store sensitive database credentials securely, outside of source control.'),
+        (re.compile(r'spring\.datasource\.password\s*=\s*".*"', re.IGNORECASE), 
+         'Database Password Exposed', 'Critical', 'Remove hardcoded database passwords from configuration files; use secure storage.')
+
     ],
     
     "Cryptography Affairs": [
+
         (re.compile(r'(?i)(private[_-]?key|public[_-]?key|pem|rsa_key)[\s:=]+[\'"]?.{32,}[\'"]?'), 
          'Hardcoded Cryptographic Key', 'High', 'Store cryptographic keys securely in environment variables or vaults.'),
         (re.compile(r'-----BEGIN RSA PRIVATE KEY-----', re.IGNORECASE), 
-         'Hardcoded RSA Private Key', 'High', 'Store RSA private keys in a secure vault rather than embedding them in code.')
+         'Hardcoded RSA Private Key', 'High', 'Store RSA private keys in a secure vault rather than embedding them in code.'),
+        (re.compile(r'-----BEGIN DSA PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded DSA Private Key', 'High', 'Store DSA private keys securely in environment variables or vaults.'),
+        (re.compile(r'-----BEGIN EC PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded EC Private Key', 'High', 'Avoid hardcoding EC private keys; use a secure key storage solution.'),
+        (re.compile(r'-----BEGIN OPENSSH PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded OpenSSH Private Key', 'High', 'Store OpenSSH keys securely rather than hardcoding them in files or code.'),
+        (re.compile(r'-----BEGIN PGP PRIVATE KEY BLOCK-----', re.IGNORECASE), 
+         'Hardcoded PGP Private Key', 'High', 'PGP private keys should be stored in a secure location, not in code files.'),
+        (re.compile(r'-----BEGIN CERTIFICATE-----', re.IGNORECASE), 
+         'Hardcoded PEM Certificate', 'Medium', 'Avoid hardcoding certificates; use secure storage solutions for certificates.'),
+        (re.compile(r'(?i)api[_-]?secret[_-]?key\s*[:=]\s*[\'"]?[A-Za-z0-9+/]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded API Secret Key', 'High', 'Store API secret keys in environment variables instead of hardcoding them.'),
+        (re.compile(r'(?i)aes[_-]?key[\s:=]+[\'"]?[A-Fa-f0-9]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded AES Encryption Key', 'High', 'Avoid hardcoding AES keys; store them in a secure vault or environment variable.'),
+        (re.compile(r'(?i)des[_-]?key[\s:=]+[\'"]?[A-Fa-f0-9]{16,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded DES Encryption Key', 'High', 'Store DES keys securely in environment variables rather than hardcoding.'),
+        (re.compile(r'(?i)hmac[_-]?secret[_-]?key[\s:=]+[\'"]?[A-Za-z0-9+/=]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded HMAC Secret Key', 'High', 'Store HMAC secret keys in secure storage rather than hardcoding them.'),
+        (re.compile(r'(?i)jwt[_-]?secret[\s:=]+[\'"]?[A-Za-z0-9-_]{16,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded JWT Signing Secret', 'High', 'Store JWT signing secrets securely in environment variables or vaults.'),
+        (re.compile(r'^(ssh-(rsa|dss|ed25519|ecdsa) AAAA[0-9A-Za-z+/]+[=]{0,3})$', re.MULTILINE), 
+         'Hardcoded SSH Authorized Key', 'Medium', 'Store SSH authorized keys securely, avoid exposing them in public repositories.'),
+        (re.compile(r'-----BEGIN ENCRYPTED PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded Encrypted Private Key', 'High', 'Store encrypted private keys securely in a secrets manager.'),
+        (re.compile(r'"private_key":\s*"(-----BEGIN PRIVATE KEY-----[^"]+-----END PRIVATE KEY-----)"', re.IGNORECASE), 
+         'Hardcoded Google Cloud Private Key', 'High', 'Move Google Cloud private keys to secure storage and reference them via environment variables.'),
+        (re.compile(r'(?i)azure[_-]?key[_-]?vault[_-]?key[\s:=]+[\'"]?[A-Za-z0-9-_]{16,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded Azure Key Vault Key', 'High', 'Store Azure keys in the Key Vault or secure storage solutions.'),
+        (re.compile(r'"private_key":\s*"(-----BEGIN PRIVATE KEY-----[\\nA-Za-z0-9+/=]+-----END PRIVATE KEY-----)"', re.IGNORECASE), 
+         'Hardcoded GCP Private Key', 'High', 'Store GCP private keys in secure storage, not in code files.'),
+        (re.compile(r'(?i)ibm[_-]?cloud[_-]?api[_-]?key[\s:=]+[\'"]?[A-Za-z0-9-_]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded IBM Cloud API Key', 'High', 'Move IBM Cloud API keys to environment variables or secure storage.'),
+        (re.compile(r'-----BEGIN RSA PUBLIC KEY-----', re.IGNORECASE), 
+         'Hardcoded RSA Public Key', 'Medium', 'Store RSA public keys securely and avoid hardcoding.'),
+        (re.compile(r'(ssh-(rsa|dss|ed25519|ecdsa) [A-Za-z0-9+/=]{100,})', re.IGNORECASE), 
+         'Hardcoded SSH Public Key', 'Medium', 'Avoid hardcoding SSH public keys; store them securely if necessary.'),
+        (re.compile(r'(?i)(symm|symmetrical|encrypt|decrypt)[\s]*key[\s:=]+[\'"]?[A-Fa-f0-9]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded Symmetric Encryption Key', 'High', 'Store symmetric keys securely in a secrets manager# Cryptography Affairs'),
+        (re.compile(r'(?i)(private[_-]?key|public[_-]?key|pem|rsa_key)[\s:=]+[\'"]?.{32,}[\'"]?'), 
+         'Hardcoded Cryptographic Key', 'High', 'Store cryptographic keys securely in environment variables or vaults.'),
+        (re.compile(r'-----BEGIN RSA PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded RSA Private Key', 'High', 'Store RSA private keys in a secure vault rather than embedding them in code.'),
+        (re.compile(r'-----BEGIN DSA PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded DSA Private Key', 'High', 'Store DSA private keys securely in environment variables or vaults.'),
+        (re.compile(r'-----BEGIN EC PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded EC Private Key', 'High', 'Avoid hardcoding EC private keys; use a secure key storage solution.'),
+        (re.compile(r'-----BEGIN OPENSSH PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded OpenSSH Private Key', 'High', 'Store OpenSSH keys securely rather than hardcoding them in files or code.'),
+        (re.compile(r'-----BEGIN PGP PRIVATE KEY BLOCK-----', re.IGNORECASE), 
+         'Hardcoded PGP Private Key', 'High', 'PGP private keys should be stored in a secure location, not in code files.'),
+        (re.compile(r'-----BEGIN CERTIFICATE-----', re.IGNORECASE), 
+         'Hardcoded PEM Certificate', 'Medium', 'Avoid hardcoding certificates; use secure storage solutions for certificates.'),
+        (re.compile(r'(?i)api[_-]?secret[_-]?key\s*[:=]\s*[\'"]?[A-Za-z0-9+/]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded API Secret Key', 'High', 'Store API secret keys in environment variables instead of hardcoding them.'),
+        (re.compile(r'(?i)aes[_-]?key[\s:=]+[\'"]?[A-Fa-f0-9]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded AES Encryption Key', 'High', 'Avoid hardcoding AES keys; store them in a secure vault or environment variable.'),
+        (re.compile(r'(?i)des[_-]?key[\s:=]+[\'"]?[A-Fa-f0-9]{16,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded DES Encryption Key', 'High', 'Store DES keys securely in environment variables rather than hardcoding.'),
+        (re.compile(r'(?i)hmac[_-]?secret[_-]?key[\s:=]+[\'"]?[A-Za-z0-9+/=]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded HMAC Secret Key', 'High', 'Store HMAC secret keys in secure storage rather than hardcoding them.'),
+        (re.compile(r'(?i)jwt[_-]?secret[\s:=]+[\'"]?[A-Za-z0-9-_]{16,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded JWT Signing Secret', 'High', 'Store JWT signing secrets securely in environment variables or vaults.'),
+        (re.compile(r'^(ssh-(rsa|dss|ed25519|ecdsa) AAAA[0-9A-Za-z+/]+[=]{0,3})$', re.MULTILINE), 
+         'Hardcoded SSH Authorized Key', 'Medium', 'Store SSH authorized keys securely, avoid exposing them in public repositories.'),
+        (re.compile(r'-----BEGIN ENCRYPTED PRIVATE KEY-----', re.IGNORECASE), 
+         'Hardcoded Encrypted Private Key', 'High', 'Store encrypted private keys securely in a secrets manager.'),
+        (re.compile(r'"private_key":\s*"(-----BEGIN PRIVATE KEY-----[^"]+-----END PRIVATE KEY-----)"', re.IGNORECASE), 
+         'Hardcoded Google Cloud Private Key', 'High', 'Move Google Cloud private keys to secure storage and reference them via environment variables.'),
+        (re.compile(r'(?i)azure[_-]?key[_-]?vault[_-]?key[\s:=]+[\'"]?[A-Za-z0-9-_]{16,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded Azure Key Vault Key', 'High', 'Store Azure keys in the Key Vault or secure storage solutions.'),
+        (re.compile(r'"private_key":\s*"(-----BEGIN PRIVATE KEY-----[\\nA-Za-z0-9+/=]+-----END PRIVATE KEY-----)"', re.IGNORECASE), 
+         'Hardcoded GCP Private Key', 'High', 'Store GCP private keys in secure storage, not in code files.'),
+        (re.compile(r'(?i)ibm[_-]?cloud[_-]?api[_-]?key[\s:=]+[\'"]?[A-Za-z0-9-_]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded IBM Cloud API Key', 'High', 'Move IBM Cloud API keys to environment variables or secure storage.'),
+        (re.compile(r'-----BEGIN RSA PUBLIC KEY-----', re.IGNORECASE), 
+         'Hardcoded RSA Public Key', 'Medium', 'Store RSA public keys securely and avoid hardcoding.'),
+        (re.compile(r'(ssh-(rsa|dss|ed25519|ecdsa) [A-Za-z0-9+/=]{100,})', re.IGNORECASE), 
+         'Hardcoded SSH Public Key', 'Medium', 'Avoid hardcoding SSH public keys; store them securely if necessary.'),
+        (re.compile(r'(?i)(symm|symmetrical|encrypt|decrypt)[\s]*key[\s:=]+[\'"]?[A-Fa-f0-9]{32,}[\'"]?', re.IGNORECASE), 
+         'Hardcoded Symmetric Encryption Key', 'High', 'Store symmetric keys securely in a secrets manager')
     ],
     
     "Personally Identifiable Information (PII)": [
@@ -162,12 +284,185 @@ PATTERNS = {
     "IP Address Exposure": [
         (re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b'), 
          'IP Address Exposure', 'Medium', 'Ensure IP addresses are masked or redacted if not necessary.')
+    ],
+
+    "API Endpoints": [
+        (re.compile(r'api\.endpoints\.expose\s*=\s*\*', re.IGNORECASE), 
+         'All API Endpoints Exposed', 'High', 'Limit exposure of API endpoints to necessary endpoints only, and secure with authentication.'),
+        (re.compile(r'api\.endpoints\.expose\s*=\s*(public|internal|private|v1|v2|v3|v4|v5)', re.IGNORECASE), 
+         'Exposed API Endpoint (public/internal/private/version)', 'Medium', 'Ensure that exposed endpoints are not disclosing sensitive information.')
+    ],
+
+    "Swagger URLs": [
+        (re.compile(r'swagger\.ui\.path\s*=\s*/swagger-ui\.html', re.IGNORECASE), 
+         'Swagger UI Exposed', 'Medium', 'Restrict access to Swagger UI in production environments.'),
+        (re.compile(r'swagger\.api\.docs\.path\s*=\s*/(v1|v2|v3)/api-docs', re.IGNORECASE), 
+         'Swagger API Docs Exposed (versioned)', 'Medium', 'Restrict access to Swagger API documentation in production environments.'),
+        (re.compile(r'swagger\.api\.docs\.path\s*=\s*/api-docs', re.IGNORECASE), 
+         'Swagger API Docs Exposed (generic)', 'Medium', 'Restrict access to Swagger API documentation in production environments.')
+    ],
+
+    "Java and Spring Boot Specific Checks": [
+        (re.compile(r'PreparedStatement\s+\w+\s*=\s*conn\.prepareStatement\s*\(\s*".*[\+\?].*"\)', re.IGNORECASE),
+         'Potential SQL Injection with PreparedStatement Concatenation', 'High', 'Use parameterized queries with placeholders (?) in PreparedStatements to avoid SQL injection vulnerabilities.'),
+        (re.compile(r'@NamedQuery\((.*query\s*=\s*".*[\+].*")\)', re.IGNORECASE),
+         'Potential SQL Injection in JPA NamedQuery', 'High', 'Avoid concatenating user input in NamedQueries; use parameterized queries.'),
+        (re.compile(r'jdbcTemplate\.query(?:For|)\(.*[+].*\)', re.IGNORECASE),
+         'Potential SQL Injection with JdbcTemplate', 'High', 'Avoid concatenating user input in JdbcTemplate queries; use placeholders or bind parameters.'),
+        (re.compile(r'(Runtime\.getRuntime\(\)\.exec|new\s+ProcessBuilder)\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential Command Injection (Runtime/ProcessBuilder)', 'High', 'Avoid passing concatenated strings to Runtime.exec or ProcessBuilder; sanitize inputs and consider safer alternatives.'),
+        (re.compile(r'new\s+ObjectInputStream\s*\(\s*.*\)', re.IGNORECASE),
+         'Potential Deserialization of Untrusted Data', 'Critical', 'Avoid deserializing untrusted data; use secure alternatives or whitelist classes.'),
+        (re.compile(r'new\s+ObjectMapper\(\)\s*\.readValue\s*\(.*\)', re.IGNORECASE),
+         'Potential Jackson Deserialization Vulnerability', 'High', 'Ensure Jackson ObjectMapper is configured with safe default typing to avoid deserialization issues.'),
+        (re.compile(r'new\s+(SAXParserFactory|DocumentBuilderFactory|SAXBuilder|XMLReader|XMLInputFactory)\(\)', re.IGNORECASE),
+         'Potential XXE Vulnerability in XML Parser', 'High', 'Disable external entity processing in XML parsers to prevent XXE attacks.'),
+        (re.compile(r'return\s+"redirect:\s*"\s*\+\s*request\.getParameter\(\s*".*"\s*\)', re.IGNORECASE),
+         'Potential Open Redirect Vulnerability', 'High', 'Validate and sanitize URL parameters to prevent open redirects.'),
+        (re.compile(r'ObjectInputStream\s*\(\s*new\s*FileInputStream\s*\(.*\)\s*\)', re.IGNORECASE), 
+         'Insecure Deserialization (ObjectInputStream)', 'High', 'Avoid deserializing untrusted data with ObjectInputStream; use safer alternatives.'),
+        (re.compile(r'ObjectInputStream\s*\(\s*request\.getInputStream\s*\(\s*\)\s*\)', re.IGNORECASE), 
+         'Insecure Deserialization from User Input', 'High', 'Do not deserialize data directly from user input; validate and sanitize data sources.'),
+        (re.compile(r'new\s+ObjectMapper\(\)\.readValue\s*\(.*\)\.typeFactory\.constructType\s*\(.*\)', re.IGNORECASE), 
+         'Potential RCE via Jackson Deserialization', 'High', 'Avoid deserializing unknown types in Jackson; use `TypeFactory.defaultInstance()` or `ObjectMapper.enableDefaultTyping` carefully.'),
+        (re.compile(r'Registry\s+registry\s*=\s*LocateRegistry\.createRegistry\s*\((1099|default)\)', re.IGNORECASE), 
+         'Insecure RMI Registry Exposure', 'High', 'Avoid exposing RMI registry on insecure ports without proper security controls.'),
+        (re.compile(r'@Query\s*\(\s*"SELECT\s+.*\s+WHERE\s+.*"\s*\)', re.IGNORECASE), 
+         'Potential SQL Injection in Spring Data Repository', 'High', 'Use parameterized queries or criteria queries in Spring Data JPA repositories.'),
+        (re.compile(r'entityManager\.createQuery\s*\(\s*".*\s+[+]\s+.*"\s*\)', re.IGNORECASE), 
+         'Potential SQL Injection via JPQL (Dynamic Query)', 'High', 'Avoid dynamic JPQL queries with concatenated user input; use parameterized queries.'),
+        (re.compile(r'ModelAndView\(\s*".*"\s*,\s*".*"\s*,\s*request\.getParameter\s*\(\s*".*"\s*\)', re.IGNORECASE), 
+         'Potential XSS in ModelAndView', 'High', 'Avoid directly rendering user inputs in ModelAndView without sanitization.'),
+        (re.compile(r'management\.endpoints\.web\.exposure\.include\s*=\s*\*', re.IGNORECASE), 
+         'All Actuator Endpoints Exposed', 'High', 'Limit exposure of Actuator endpoints to necessary ones only and secure them with authentication.'),
+        (re.compile(r'management\.endpoints\.web\.exposure\.include\s*=\s*(health|info)', re.IGNORECASE), 
+         'Sensitive Actuator Endpoint Exposed', 'Medium', 'Ensure that exposed endpoints are restricted to trusted networks and do not disclose sensitive information.'),
+        (re.compile(r'spring\.security\.csrf\.enabled\s*=\s*false', re.IGNORECASE), 
+         'CSRF Protection Disabled', 'High', 'Enable CSRF protection for all forms or secure endpoints requiring stateful interactions.'),
+        (re.compile(r'Content-Security-Policy\s*:\s*default-src\s+.*;', re.IGNORECASE), 
+         'Weak Content Security Policy (CSP)', 'Medium', 'Define a strict CSP to prevent unauthorized resource loading and mitigate XSS risks.'),
+        (re.compile(r'new\s+InitialDirContext\(\s*env\s*\)\s*\.\s*search\s*\(.*[+].*\)', re.IGNORECASE), 
+         'Potential LDAP Injection (Unfiltered User Input)', 'High', 'Avoid using unfiltered user input in LDAP queries; sanitize inputs properly.'),
+        (re.compile(r'new\s+File\s*\(\s*request\.getParameter\s*\(\s*".*"\s*\)\s*\)', re.IGNORECASE), 
+         'Potential Path Traversal (User Input in File Paths)', 'High', 'Avoid using raw user inputs in file paths; validate and sanitize path inputs.'),
+        (re.compile(r'\$\{\s*request\.(getParameter|getAttribute|getHeader)\(.*\)\s*\}', re.IGNORECASE), 
+         'Potential Reflected XSS in Template (Thymeleaf/JSP)', 'High', 'Escape user input before rendering it in Thymeleaf or JSP templates to prevent XSS.'),
+        (re.compile(r'@Transactional\s*\(\s*propagation\s*=\s*Propagation\.REQUIRES_NEW\s*\)', re.IGNORECASE),
+         'Potential Transaction Management Misconfiguration', 'Medium', 'Avoid using REQUIRES_NEW if not needed; ensure proper transaction boundaries to prevent data integrity issues.'),
+        (re.compile(r'getParameter\s*\(\s*".*"\s*\)\s*==\s*null', re.IGNORECASE),
+         'Potential Null Parameter Check', 'Low', 'Check for null values securely and avoid potential NPE (Null Pointer Exceptions).'),
+        (re.compile(r'spring\.security\.user\.name\s*=\s*.*', re.IGNORECASE),
+         'Hardcoded User Credentials', 'High', 'Do not hardcode user credentials; consider using a secure vault for sensitive configurations.'),
+        (re.compile(r'spring\.security\.user\.password\s*=\s*.*', re.IGNORECASE),
+         'Hardcoded User Password', 'High', 'Do not hardcode passwords; use environment variables or secure storage solutions.'),
+        (re.compile(r'@RequestMapping\s*\(.*method\s*=\s*RequestMethod\.GET\s*.*\)', re.IGNORECASE),
+         'Potential Sensitive Data Exposure via GET Request', 'High', 'Avoid using GET requests for sensitive operations; prefer POST requests with proper CSRF protection.'),
+        (re.compile(r'server\.port\s*=\s*.*', re.IGNORECASE),
+         'Insecure Default Server Port', 'Medium', 'Change default server port to a non-standard port to reduce attack surface.'),
+        (re.compile(r'server\.error\.include-message\s*=\s*always', re.IGNORECASE),
+         'Detailed Error Messages Exposed', 'High', 'Do not expose detailed error messages; configure error handling to show generic messages to users.'),
+        (re.compile(r'spring\.security\.oauth2\.client\.registration\..*\.client-secret\s*=\s*.*', re.IGNORECASE),
+         'Exposed OAuth2 Client Secret', 'High', 'Do not expose client secrets in application properties; use secure configurations or vaults.'),
+        (re.compile(r'if\s*\(\s*request\.getParameter\(\s*".*"\s*\)\s*!=\s*null\s*\)\s*{', re.IGNORECASE),
+         'Potential Improper Null Handling', 'Medium', 'Ensure null checks are comprehensive and do not lead to unintended behavior.'),
+        (re.compile(r'@PathVariable\s*\(".*"\)\s*.*\s*==\s*null', re.IGNORECASE),
+         'Potential Null Check on Path Variable', 'High', 'Validate and sanitize path variables to prevent potential security issues.'),
+        (re.compile(r'spring\.security\.remember-me\.key\s*=\s*.*', re.IGNORECASE),
+         'Insecure Remember-Me Key', 'High', 'Use a strong, randomly generated key for remember-me functionality.'),
+        (re.compile(r'new\s+Gson\(\)\s*\.fromJson\s*\(.*\)', re.IGNORECASE),
+         'Potential JSON Deserialization Vulnerability', 'High', 'Avoid deserializing untrusted JSON data; use safe parsing practices.'),
+        (re.compile(r'new\s+Socket\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential Socket Injection', 'High', 'Avoid constructing socket connections with concatenated strings; validate inputs properly.'),
+        (re.compile(r'@Controller\s*public\s+class\s+.*\s*extends\s+.*Controller\s*{', re.IGNORECASE),
+         'Potential Insecure Controller Design', 'Medium', 'Ensure controllers do not expose sensitive operations without proper authentication checks.'),
+        (re.compile(r'@PostConstruct\s*public\s*void\s*init\(\)\s*{', re.IGNORECASE),
+         'Potential Initialization Vulnerabilities', 'Medium', 'Review initialization methods for security implications, especially if they handle sensitive data.'),
+        (re.compile(r'spring\.security\.oauth2\.client\.registration\..*\.client-id\s*=\s*.*', re.IGNORECASE),
+         'Exposed OAuth2 Client ID', 'Medium', 'Keep client IDs secure and do not expose them in application properties.'),
+        (re.compile(r'spring\.security\.oauth2\.client\.registration\..*\.client-id\s*=\s*.*', re.IGNORECASE),
+         'Exposed OAuth2 Client ID', 'Medium', 'Keep client IDs secure and do not expose them in application properties.'),
+        (re.compile(r'new\s+HttpURLConnection\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential HTTP Request Injection', 'High', 'Avoid constructing HTTP requests with concatenated strings; sanitize inputs properly.'),
+        (re.compile(r'InputStreamReader\s*\(\s*new\s+FileInputStream\s*\(.*\)\s*\)', re.IGNORECASE),
+         'Potential Insecure File Input', 'High', 'Avoid reading files without proper validation and sanitization of file paths.'),
+        (re.compile(r'spring\.security\.csrf\.enabled\s*=\s*false', re.IGNORECASE),
+         'CSRF Protection Disabled', 'High', 'Enable CSRF protection for all forms or secure endpoints requiring stateful interactions.'),
+        (re.compile(r'Content-Security-Policy\s*:\s*default-src\s+.*;', re.IGNORECASE),
+         'Weak Content Security Policy (CSP)', 'Medium', 'Define a strict CSP to prevent unauthorized resource loading and mitigate XSS risks.'),
+        (re.compile(r'new\s+InitialDirContext\(\s*env\s*\)\s*\.\s*search\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential LDAP Injection (Unfiltered User Input)', 'High', 'Avoid using unfiltered user input in LDAP queries; sanitize inputs properly.'),
+        (re.compile(r'new\s+File\s*\(\s*request\.getParameter\s*\(\s*".*"\s*\)\s*\)', re.IGNORECASE),
+         'Potential Path Traversal (User Input in File Paths)', 'High', 'Avoid using raw user inputs in file paths; validate and sanitize path inputs.'),
+        (re.compile(r'\$\{\s*request\.(getParameter|getAttribute|getHeader)\(.*\)\s*\}', re.IGNORECASE),
+         'Potential Reflected XSS in Template (Thymeleaf/JSP)', 'High', 'Escape user input before rendering it in Thymeleaf or JSP templates to prevent XSS.'),
+        (re.compile(r'new\s+ProcessBuilder\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential Command Injection via ProcessBuilder', 'High', 'Avoid passing concatenated strings to ProcessBuilder; sanitize inputs and consider safer alternatives.'),
+        (re.compile(r'spring\.web\.mvc\.view\.prefix\s*=\s*.*', re.IGNORECASE),
+         'Potential Path Traversal in View Prefix', 'Medium', 'Avoid dynamic view resolution that includes user input; validate and sanitize view paths.'),
+        (re.compile(r'spring\.security\.http\.basic\.enabled\s*=\s*false', re.IGNORECASE),
+         'Basic Authentication Disabled', 'High', 'Enable Basic Authentication only if necessary and ensure proper security measures are in place.'),
+        (re.compile(r'new\s+URL\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential URL Injection', 'High', 'Avoid constructing URLs with concatenated strings; validate and sanitize URL components.'),
+        (re.compile(r'new\s+Cipher\s*\(.*[+].*\)', re.IGNORECASE),
+         'Potential Weak Encryption Usage', 'High', 'Avoid using weak or outdated encryption algorithms; use strong, modern cryptographic standards.'),
+        (re.compile(r'@Async\s*public\s*void\s*.*\s*\(.*\)', re.IGNORECASE),
+         'Potential Race Condition in Async Methods', 'High', 'Ensure thread safety in async methods to prevent race conditions and data inconsistency.'),
+        (re.compile(r'final\s+String\s+.*\s*=\s*".*[\+\?].*"', re.IGNORECASE),
+         'Potential SQL Injection with String Concatenation', 'High', 'Avoid concatenating strings for SQL queries; use parameterized queries instead.')
+    ],
+
+    "Potential Race Condition Indicators Spring Boot": [
+        (re.compile(r'@Synchronized', re.IGNORECASE), 
+         'Use of @Synchronized Annotation', 'Medium', 'Verify that synchronization meets the application’s concurrency needs.'),
+        (re.compile(r'@Lock\(LockModeType\.PESSIMISTIC_WRITE\)', re.IGNORECASE), 
+         'Pessimistic Locking Usage', 'Low', 'Check if this locking strategy is appropriately used to prevent race conditions.'),
+        (re.compile(r'\bExecutorService\b|\bThreadPoolTaskExecutor\b', re.IGNORECASE), 
+         'Custom Thread Pool Usage', 'Medium', 'Ensure proper thread management and safety within custom thread pools.'),
+        (re.compile(r'@Async', re.IGNORECASE), 
+         'Asynchronous Method Annotation (@Async)', 'High', 'Ensure that @Async methods are thread-safe and do not access shared mutable state.'),
+        (re.compile(r'@Transactional\((isolation\s*=\s*Isolation\.(REPEATABLE_READ|SERIALIZABLE))\)', re.IGNORECASE), 
+         'High Isolation Level Transactional', 'Low', 'Check if high isolation levels are necessary and properly set to avoid race conditions.'),
+        (re.compile(r'new\s+ReentrantLock\(\)', re.IGNORECASE), 
+         'Explicit ReentrantLock Usage', 'Medium', 'Review ReentrantLock usage for proper handling of concurrency scenarios.'),
+        (re.compile(r'@Transactional', re.IGNORECASE), 
+         'Transactional Annotation Usage', 'Medium', 'Ensure transactions are properly scoped to prevent race conditions in concurrent data access.'),
+        (re.compile(r'Collections\.synchronized|ConcurrentHashMap|CopyOnWriteArrayList', re.IGNORECASE), 
+         'Thread-safe Collection Usage', 'Low', 'Confirm that thread-safe collections are used appropriately to handle concurrent access.')
+    ],
+
+    "Insecure Password Encoder": [
+        (re.compile(r'new\s+BCryptPasswordEncoder\(\s*0\s*\)', re.IGNORECASE), 
+         'Weak BCryptPasswordEncoder Configuration', 'High', 'Use a BCrypt strength of at least 10 for secure password encoding.'),
+        (re.compile(r'NoOpPasswordEncoder\.getInstance\(\)', re.IGNORECASE), 
+         'NoOpPasswordEncoder (Plaintext Passwords)', 'Critical', 'Do not use NoOpPasswordEncoder; passwords should never be stored in plaintext.')
+    ],
+
+    "Log4J Vulnerability Detection": [
+        (re.compile(r'log4j[-\.](core|api)[-:](\d+\.\d+\.\d+)', re.IGNORECASE), 
+         'Log4J Dependency Found', 'High', 'Check if the Log4J version is vulnerable. Upgrade to a secure version (>=2.17.1 for Log4J 2 or >=1.2.17 for Log4J 1 with mitigations).'),
+        (re.compile(r'jndi(?:Lookup)?\s*=\s*["\']?(ldap|ldaps|rmi|dns|iiop|nis|corba|nds):', re.IGNORECASE), 
+         'Potentially Vulnerable JNDI Lookup Configuration in Log4J', 'Critical', 'Remove or restrict JNDI lookups in Log4J configuration to mitigate remote code execution risks.'),
+        (re.compile(r'log4j2\.formatMsgNoLookups\s*=\s*["\']?false["\']?', re.IGNORECASE),
+         'Format Message Lookups Enabled', 'High', 'Set log4j2.formatMsgNoLookups to true to disable message lookups and mitigate CVE-2021-44228.'),
+        (re.compile(r'(log4j2?\.properties|log4j2?\.xml)', re.IGNORECASE),
+         'Log4J Configuration File Detected', 'Medium', 'Review Log4J configuration file for secure settings and ensure no vulnerable settings are present.'),
+        (re.compile(r'log4j\.appender\.[A-Za-z]+\s*=.*SocketAppender', re.IGNORECASE),
+         'Insecure Log4J SocketAppender Detected', 'High', 'Use secure communication methods for Log4J appenders to prevent exposure of log data to network interception.'),
+        (re.compile(r'log4j[-\.](core|api)[-:]((2\.0|2\.1[0-6]|2\.17\.0)\.\d+)', re.IGNORECASE),
+         'Vulnerable Log4J Version Detected', 'Critical', 'Upgrade to Log4J 2.17.1 or later to address known vulnerabilities.'),
+        (re.compile(r'\$\{jndi:(ldap|rmi|dns|ldaps):\/\/[^}]+\}', re.IGNORECASE),
+         'JNDI Injection Pattern Detected in Logs', 'Critical', 'Sanitize and validate log inputs to prevent JNDI injection attempts.'),
+        (re.compile(r'log4j\.appender\.[A-Za-z]+\.RemoteHost\s*=\s*["\']?\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}["\']?', re.IGNORECASE),
+         'Hardcoded IP in Log4J SocketAppender', 'Medium', 'Avoid hardcoding IP addresses in log appenders. Use secure, dynamic configurations instead.'),
+        (re.compile(r'org\.apache\.log4j\.net\.SocketServer', re.IGNORECASE),
+         'Log4J SocketServer Detected', 'High', 'Avoid exposing Log4J SocketServer to untrusted networks to prevent unauthorized access to logging services.')
     ]
 }
 
 
 # Color map for severity levels
 COLOR_MAP = {
+    'Critical': Fore.MAGENTA + Style.BRIGHT,
     'High': Fore.RED + Style.BRIGHT,
     'Medium': Fore.YELLOW + Style.BRIGHT,
     'Low': Fore.GREEN + Style.BRIGHT,
@@ -285,7 +580,7 @@ def scan_directory(directory: str, previous_hashes, selected_patterns):
         for root, _, files in os.walk(directory):
             for file in files:
                 file_path = os.path.join(root, file)
-                if file.endswith(('.java', '.properties', '.xml', '.py', '.js', '.yml', '.json')):
+                if file.endswith(('.java', '.properties', '.xml', '.py', '.js', '.ts', '.rb', '.php', '.go', '.cpp', '.c', '.cs', '.swift', '.kt', '.kts', '.yml', '.yaml', '.json', '.ini', '.env', '.conf', '.config', '.cfg', '.html', '.htm', '.xhtml', '.jsp', '.aspx', '.vue', '.jsx', '.tsx', '.jspf', '.tag', '.log', '.txt', '.gradle', '.pom', '.maven', '.jar', '.war', '.ear', '.sh', '.bat', '.cmd', '.ps1', '.sql', '.db', '.dbf', '.sqlite', '.bash', '.zsh', '.csh', '.tcsh', '.tf', '.tfvars', '.dockerfile', '.docker-compose.yml', '.md', '.rst', '.csv', '.tsv', '.ipynb')):
                     futures.append(executor.submit(scan_file, file_path, previous_hashes, current_hashes, selected_patterns))
 
         for future in futures:
@@ -385,6 +680,7 @@ def export_to_html(findings, filename="security_scan_report.html"):
                 .section-title { padding: 15px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
                 .section-title::after { content: '▼'; margin-left: 8px; font-size: 14px; }
                 .section-title.collapsed::after { content: '▶'; }
+                .critical { background-color: #f5c6cb; color: #721c24; }  /* Style for critical severity */
                 .high { background-color: #f8d7da; color: #721c24; }
                 .medium { background-color: #fff3cd; color: #856404; }
                 .low { background-color: #d4edda; color: #155724; }
@@ -411,6 +707,7 @@ def export_to_html(findings, filename="security_scan_report.html"):
             </header>
 
             <div class="summary">
+                <span class="summary-item critical"><span class="icon">🔴</span>Critical: {{ sorted_findings['Critical'] | length }}</span>
                 <span class="summary-item high"><span class="icon">🔴</span>High: {{ sorted_findings['High'] | length }}</span>
                 <span class="summary-item medium"><span class="icon">🟠</span>Medium: {{ sorted_findings['Medium'] | length }}</span>
                 <span class="summary-item low"><span class="icon">🟢</span>Low: {{ sorted_findings['Low'] | length }}</span>
@@ -421,6 +718,7 @@ def export_to_html(findings, filename="security_scan_report.html"):
                 <input type="text" id="search" class="search-box" placeholder="Search by file, description, or fix..." aria-label="Search findings">
                 <select id="severity-filter" class="filter" aria-label="Filter by severity">
                     <option value="all">All Severities</option>
+                    <option value="Critical">Critical</option>
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
@@ -433,7 +731,7 @@ def export_to_html(findings, filename="security_scan_report.html"):
             </div>
 
             <div id="findings-container">
-                {% for severity in ['High', 'Medium', 'Low', 'Informational'] %}
+                {% for severity in ['Critical', 'High', 'Medium', 'Low', 'Informational'] %}
                 <div class="severity-section {{ severity.lower() }}">
                     <div class="section-title {{ severity.lower() }}" onclick="toggleSection(this)">
                         <span>{{ severity.upper() }} SEVERITY</span>
@@ -518,7 +816,6 @@ def export_to_html(findings, filename="security_scan_report.html"):
         </body>
         </html>
         """)
-
 
         # Escape potentially harmful characters in findings before rendering
         for finding in findings:
