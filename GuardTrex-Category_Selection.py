@@ -652,7 +652,8 @@ def scan_directory(directory: str, previous_hashes, selected_patterns):
         for root, _, files in os.walk(directory):
             for file in files:
                 file_path = os.path.join(root, file)
-                if file.endswith(('.java', '.properties', '.xml', '.py', '.js', '.ts', '.rb', '.php', '.go', '.cpp', '.c', '.cs', '.swift', '.kt', '.kts', '.yml', '.yaml', '.json', '.ini', '.env', '.conf', '.config', '.cfg', '.html', '.htm', '.xhtml', '.jsp', '.aspx', '.vue', '.jsx', '.tsx', '.jspf', '.tag', '.log', '.txt', '.gradle', '.pom', '.maven', '.jar', '.war', '.ear', '.sh', '.bat', '.cmd', '.ps1', '.sql', '.db', '.dbf', '.sqlite', '.bash', '.zsh', '.csh', '.tcsh', '.tf', '.tfvars', '.dockerfile', '.docker-compose.yml', '.md', '.rst', '.csv', '.tsv', '.ipynb')):
+                if file.endswith(('.java', '.properties', '.xml', '.py', '.js', '.ts', '.rb', '.php', '.go', '.cpp', '.c', '.cs', '.swift', '.kt', '.kts', '.yml', '.yaml', '.json', '.ini', '.env', '.conf', '.config', '.cfg', '.html', '.htm', '.xhtml', '.jsp', '.aspx', '.vue', '.jsx', '.tsx','.jspf', '.tag', '.log', '.txt', '.gradle', '.pom', '.maven', '.jar', '.war', '.ear','.sh', '.bat', '.cmd', '.ps1', '.sql', '.db', '.dbf', '.sqlite', '.bash', '.zsh', '.csh', '.tcsh', '.tf', '.tfvars', '.dockerfile', '.docker-compose.yml', '.md', '.rst', '.csv', '.tsv', '.ipynb','.ascx', '.ashx', '.asmx', '.axd', '.svc', '.cshtml', '.vbhtml', '.master', '.web.config', '.browser', '.edmx', '.mdf', '.licx', '.map', '.xamlx', '.xsd', '.xsl', '.xslt')):
+
                     futures.append(executor.submit(scan_file, file_path, previous_hashes, current_hashes, selected_patterns))
 
         for future in futures:
