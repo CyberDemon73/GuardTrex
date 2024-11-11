@@ -31,7 +31,6 @@ IGNORE_LIST = ['node_modules', '.git', '__pycache__']
 WORKSPACES_ROOT = 'Workspaces'  # Root folder for all workspaces
 CACHE_FILE_NAME = 'scan_cache.txt'
 LOG_FILE_NAME = 'security_scan.log'
-SCANNABLE_EXTENSIONS = ('.java', '.properties', '.xml', '.py', '.js', '.yml', '.json')
 GUARDTREX_ASCII = """
    ____ _   _   _    ____  ____ _____ ____  _______  __
   / ___| | | | / \  |  _ \|  _ \_   _|  _ \| ____\ \/ /
