@@ -1,0 +1,946 @@
+{
+    "Actuator Endpoints": [
+        {
+            "pattern": "management\\.endpoints\\.web\\.exposure\\.include\\s*=\\s*\\*",
+            "description": "All Actuator Endpoints Exposed",
+            "severity": "High",
+            "recommended_action": "Limit exposure of Actuator endpoints to necessary endpoints only, and secure with authentication."
+        }
+    ],
+    "CSRF Protection": [
+        {
+            "pattern": "spring\\.security\\.csrf\\.enabled\\s*=\\s*false",
+            "description": "CSRF Protection Disabled",
+            "severity": "High",
+            "recommended_action": "Enable CSRF protection for all forms or secure endpoints requiring stateful interactions."
+        }
+    ],
+    "Password Storage": [
+        {
+            "pattern": "spring\\.data\\.source\\.password\\s*=\\s*['\"]?[a-zA-Z0-9]*['\"]?",
+            "description": "Insecure Password Storage",
+            "severity": "High",
+            "recommended_action": "Store database credentials in a secure configuration provider or environment variable."
+        }
+    ],
+    "HTTPS Enforcement": [
+        {
+            "pattern": "http\\.server\\.secure-port\\s*=\\s*8080",
+            "description": "HTTP Connection Allowed",
+            "severity": "High",
+            "recommended_action": "Ensure all connections enforce HTTPS with SSL/TLS configurations."
+        },
+        {
+            "pattern": "server\\.ssl\\.enabled\\s*=\\s*false",
+            "description": "SSL/TLS Disabled",
+            "severity": "High",
+            "recommended_action": "Enable SSL/TLS to ensure secure communication over HTTPS."
+        }
+    ],
+    "Response Headers Security": [
+        {
+            "pattern": "Content-Security-Policy\\s*:\\s*default-src\\s+.*;",
+            "description": "Missing or Weak Content Security Policy (CSP)",
+            "severity": "Medium",
+            "recommended_action": "Define a strict CSP to prevent unauthorized resource loading and mitigate XSS risks."
+        },
+        {
+            "pattern": "spring\\.web\\.cors\\.allowed-origin-patterns\\s*=\\s*\\*",
+            "description": "CORS Policy Allows All Origins",
+            "severity": "High",
+            "recommended_action": "Restrict CORS to only trusted domains. Avoid using wildcard (*) in production."
+        }
+    ],
+    "H2 Console": [
+        {
+            "pattern": "spring\\.h2\\.console\\.enabled\\s*=\\s*true",
+            "description": "Insecure H2 Console Exposure",
+            "severity": "High",
+            "recommended_action": "Disable H2 console in production or secure with authentication."
+        }
+    ],
+    "Session Management": [
+        {
+            "pattern": "server\\.servlet\\.session\\.timeout\\s*=\\s*0",
+            "description": "Session Timeout Disabled",
+            "severity": "High",
+            "recommended_action": "Set a reasonable session timeout to prevent session hijacking attacks."
+        }
+    ],
+    "Debugging Enablement": [
+        {
+            "pattern": "spring\\.boot\\.admin\\.client\\.enabled\\s*=\\s*true",
+            "description": "Debugging Enabled in Production",
+            "severity": "High",
+            "recommended_action": "Disable debug settings in production environments to avoid exposing internal information."
+        },
+        {
+            "pattern": "spring\\.devtools\\.restart\\.enabled\\s*=\\s*true",
+            "description": "Spring Boot Devtools Enabled",
+            "severity": "Medium",
+            "recommended_action": "Disable Devtools in production as it can expose sensitive data and increase resource usage."
+        },
+        {
+            "pattern": "logging\\.level\\..*\\s*=\\s*DEBUG",
+            "description": "Verbose Logging Enabled",
+            "severity": "Medium",
+            "recommended_action": "Set logging level to WARN or ERROR in production to avoid logging sensitive information."
+        },
+        {
+            "pattern": "display_errors\\s*=\\s*On",
+            "description": "PHP Display Errors Enabled",
+            "severity": "High",
+            "recommended_action": "Set display_errors=Off in production to avoid exposing sensitive server information."
+        },
+        {
+            "pattern": "console\\.log\\(",
+            "description": "Console Logging in Node.js",
+            "severity": "Medium",
+            "recommended_action": "Avoid using console.log in production; use structured logging with appropriate levels."
+        },
+        {
+            "pattern": "APP_DEBUG\\s*=\\s*true",
+            "description": "Debug Mode Enabled in Laravel",
+            "severity": "High",
+            "recommended_action": "Disable APP_DEBUG in production to prevent detailed error messages."
+        }
+    ],
+    "API Keys and Secrets": [
+        {
+            "pattern": "(?i)(api[_-]?secret|secret[_-]?token)[\\s:=]+['\"]?.{16,}['\"]?",
+            "description": "Hardcoded API Secret Token",
+            "severity": "High",
+            "recommended_action": "Store API secret tokens in secure environment variables."
+        },
+        {
+            "pattern": "(?i)client[_-]?secret[\\s:=]+['\"]?.{16,}['\"]?",
+            "description": "Hardcoded OAuth Client Secret",
+            "severity": "High",
+            "recommended_action": "Store OAuth client secrets securely in environment variables."
+        },
+        {
+            "pattern": "(?i)(encryption[_-]?key|aes[_-]?key)[\\s:=]+['\"]?.{16,}['\"]?",
+            "description": "Hardcoded Encryption Key",
+            "severity": "High",
+            "recommended_action": "Avoid hardcoding encryption keys; use secure key management solutions."
+        }
+    ],
+    "Database Connection Strings": [
+        {
+            "pattern": "(?i)(db[_-]?password|database[_-]?password)[\\s:=]+['\"]?.{6,}['\"]?",
+            "description": "Hardcoded Database Password",
+            "severity": "High",
+            "recommended_action": "Store database passwords securely in environment variables."
+        },
+        {
+            "pattern": "mongodb:\\/\\/(.*?):(.*?)@",
+            "description": "MongoDB Connection String with Credentials",
+            "severity": "High",
+            "recommended_action": "Store MongoDB credentials securely in environment variables."
+        },
+        {
+            "pattern": "postgresql:\\/\\/[^\\s]+",
+            "description": "PostgreSQL Connection String",
+            "severity": "High",
+            "recommended_action": "Use environment variables for PostgreSQL connection strings."
+        },
+        {
+            "pattern": "mysql:\\/\\/[^\\s]+:[^\\s]+@",
+            "description": "MySQL Connection String with Credentials",
+            "severity": "High",
+            "recommended_action": "Avoid storing MySQL credentials directly in the connection string; use secure configurations."
+        },
+        {
+            "pattern": "mssql:\\/\\/[^\\s]+",
+            "description": "MSSQL Connection String",
+            "severity": "High",
+            "recommended_action": "Use environment variables for MSSQL connection strings."
+        },
+        {
+            "pattern": "jdbc:oracle:[^\\s]+",
+            "description": "Oracle JDBC Connection String",
+            "severity": "High",
+            "recommended_action": "Move Oracle connection strings to environment variables."
+        },
+        {
+            "pattern": "sqlite:\\/\\/\\/?[\\w\\/\\-\\.]+\\.db",
+            "description": "SQLite Connection String with File Path",
+            "severity": "Medium",
+            "recommended_action": "Secure SQLite database paths and avoid exposing them in public code."
+        },
+        {
+            "pattern": "(?i)dynamodb:\\/\\/(.*?):(.*?)@",
+            "description": "DynamoDB Connection String with Credentials",
+            "severity": "High",
+            "recommended_action": "Use AWS IAM roles instead of hardcoded credentials for DynamoDB."
+        },
+        {
+            "pattern": "redis:\\/\\/:([^\\s]+)@",
+            "description": "Redis Connection String with Password",
+            "severity": "High",
+            "recommended_action": "Avoid hardcoding Redis passwords; use secure configurations."
+        },
+        {
+            "pattern": "elasticsearch:\\/\\/[^\\s]+",
+            "description": "Elasticsearch Connection String",
+            "severity": "High",
+            "recommended_action": "Move Elasticsearch connection strings to secure configurations."
+        },
+        {
+            "pattern": "neo4j:\\/\\/[^\\s]+:[^\\s]+@",
+            "description": "Neo4j Connection String with Credentials",
+            "severity": "High",
+            "recommended_action": "Use secure storage for Neo4j credentials."
+        },
+        {
+            "pattern": "couchdb:\\/\\/[^\\s]+",
+            "description": "CouchDB Connection String",
+            "severity": "Medium",
+            "recommended_action": "Consider securing CouchDB connection strings in environment variables."
+        },
+        {
+            "pattern": "influxdb:\\/\\/[^\\s]+",
+            "description": "InfluxDB Connection String",
+            "severity": "Medium",
+            "recommended_action": "Ensure InfluxDB connection strings are managed securely."
+        },
+        {
+            "pattern": "cassandra:\\/\\/[^\\s]+",
+            "description": "Cassandra Connection String",
+            "severity": "High",
+            "recommended_action": "Avoid exposing Cassandra connection strings directly; use secure storage."
+        },
+        {
+            "pattern": "ftp:\\/\\/[^\\s]+:[^\\s]+@",
+            "description": "FTP Connection with Credentials",
+            "severity": "High",
+            "recommended_action": "Avoid embedding FTP credentials directly in code; use secure storage methods."
+        },
+        {
+            "pattern": "mongodb\\+srv:\\/\\/[^\\s]+",
+            "description": "MongoDB SRV Connection String",
+            "severity": "High",
+            "recommended_action": "Move MongoDB SRV connection strings to environment variables."
+        },
+        {
+            "pattern": "amqp:\\/\\/[^\\s]+",
+            "description": "RabbitMQ Connection String",
+            "severity": "Medium",
+            "recommended_action": "Use secure configurations for RabbitMQ connections."
+        },
+        {
+            "pattern": "cassandra:\\/\\/[^\\s]+:[^\\s]+@",
+            "description": "Cassandra Connection with Credentials",
+            "severity": "High",
+            "recommended_action": "Avoid hardcoding Cassandra credentials in connection strings."
+        },
+        {
+            "pattern": "cloudsql:\\/\\/[^\\s]+",
+            "description": "Google CloudSQL Connection String",
+            "severity": "High",
+            "recommended_action": "Store Google CloudSQL connection strings securely in environment variables."
+        },
+        {
+            "pattern": "mariadb:\\/\\/[^\\s]+",
+            "description": "MariaDB Connection String",
+            "severity": "High",
+            "recommended_action": "Avoid exposing MariaDB connection strings directly; use secure configurations."
+        },
+        {
+            "pattern": "spring\\.datasource\\.url\\s*=\\s*\".*\"",
+            "description": "Database Connection URL Exposed",
+            "severity": "High",
+            "recommended_action": "Ensure database connection details are stored securely and not exposed in configuration files."
+        },
+        {
+            "pattern": "spring\\.datasource\\.username\\s*=\\s*\".*\"",
+            "description": "Database Username Exposed",
+            "severity": "High",
+            "recommended_action": "Store sensitive database credentials securely, outside of source control."
+        },
+        {
+            "pattern": "spring\\.datasource\\.password\\s*=\\s*\".*\"",
+            "description": "Database Password Exposed",
+            "severity": "Critical",
+            "recommended_action": "Remove hardcoded database passwords from configuration files; use secure storage."
+        }
+    ],
+    "Cryptography Affairs": [
+        {
+            "pattern": "(?i)(private[_-]?key|public[_-]?key|pem|rsa_key)[\\s:=]+['\"]?.{32,}['\"]?",
+            "description": "Hardcoded Cryptographic Key",
+            "severity": "High",
+            "recommended_action": "Store cryptographic keys securely in environment variables or vaults."
+        },
+        {
+            "pattern": "-----BEGIN RSA PRIVATE KEY-----",
+            "description": "Hardcoded RSA Private Key",
+            "severity": "High",
+            "recommended_action": "Store RSA private keys in a secure vault rather than embedding them in code."
+        },
+        {
+            "pattern": "-----BEGIN DSA PRIVATE KEY-----",
+            "description": "Hardcoded DSA Private Key",
+            "severity": "High",
+            "recommended_action": "Store DSA private keys securely in environment variables or vaults."
+        },
+        {
+            "pattern": "-----BEGIN EC PRIVATE KEY-----",
+            "description": "Hardcoded EC Private Key",
+            "severity": "High",
+            "recommended_action": "Avoid hardcoding EC private keys; use a secure key storage solution."
+        },
+        {
+            "pattern": "-----BEGIN OPENSSH PRIVATE KEY-----",
+            "description": "Hardcoded OpenSSH Private Key",
+            "severity": "High",
+            "recommended_action": "Store OpenSSH keys securely rather than hardcoding them in files or code."
+        },
+        {
+            "pattern": "-----BEGIN PGP PRIVATE KEY BLOCK-----",
+            "description": "Hardcoded PGP Private Key",
+            "severity": "High",
+            "recommended_action": "PGP private keys should be stored in a secure location, not in code files."
+        },
+        {
+            "pattern": "-----BEGIN CERTIFICATE-----",
+            "description": "Hardcoded PEM Certificate",
+            "severity": "Medium",
+            "recommended_action": "Avoid hardcoding certificates; use secure storage solutions for certificates."
+        },
+        {
+            "pattern": "(?i)api[_-]?secret[_-]?key\\s*[:=]\\s*['\"]?[A-Za-z0-9+/]{32,}['\"]?",
+            "description": "Hardcoded API Secret Key",
+            "severity": "High",
+            "recommended_action": "Store API secret keys in environment variables instead of hardcoding them."
+        },
+        {
+            "pattern": "(?i)aes[_-]?key[\\s:=]+['\"]?[A-Fa-f0-9]{32,}['\"]?",
+            "description": "Hardcoded AES Encryption Key",
+            "severity": "High",
+            "recommended_action": "Avoid hardcoding AES keys; store them in a secure vault or environment variable."
+        },
+        {
+            "pattern": "(?i)des[_-]?key[\\s:=]+['\"]?[A-Fa-f0-9]{16,}['\"]?",
+            "description": "Hardcoded DES Encryption Key",
+            "severity": "High",
+            "recommended_action": "Store DES keys securely in environment variables rather than hardcoding."
+        },
+        {
+            "pattern": "(?i)hmac[_-]?secret[_-]?key[\\s:=]+['\"]?[A-Za-z0-9+/=]{32,}['\"]?",
+            "description": "Hardcoded HMAC Secret Key",
+            "severity": "High",
+            "recommended_action": "Store HMAC secret keys in secure storage rather than hardcoding them."
+        },
+        {
+            "pattern": "(?i)jwt[_-]?secret[\\s:=]+['\"]?[A-Za-z0-9-_]{16,}['\"]?",
+            "description": "Hardcoded JWT Signing Secret",
+            "severity": "High",
+            "recommended_action": "Store JWT signing secrets securely in environment variables or vaults."
+        },
+        {
+            "pattern": "^(ssh-(rsa|dss|ed25519|ecdsa) AAAA[0-9A-Za-z+/]+[=]{0,3})$",
+            "description": "Hardcoded SSH Authorized Key",
+            "severity": "Medium",
+            "recommended_action": "Store SSH authorized keys securely, avoid exposing them in public repositories."
+        },
+        {
+            "pattern": "-----BEGIN ENCRYPTED PRIVATE KEY-----",
+            "description": "Hardcoded Encrypted Private Key",
+            "severity": "High",
+            "recommended_action": "Store encrypted private keys securely in a secrets manager."
+        },
+        {
+            "pattern": "\"private_key\":\\s*\"(-----BEGIN PRIVATE KEY-----[^\" ]+-----END PRIVATE KEY-----)\"",
+            "description": "Hardcoded Google Cloud Private Key",
+            "severity": "High",
+            "recommended_action": "Move Google Cloud private keys to secure storage and reference them via environment variables."
+        }
+    ],
+    "Personally Identifiable Information (PII)": [
+        {
+            "pattern": "\\b\\d{1,2}[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01])\\d{7}\\b",
+            "description": "Potential Egyptian National ID Number",
+            "severity": "High",
+            "recommended_action": "Ensure that Egyptian National IDs are securely stored and masked when displayed."
+        },
+        {
+            "pattern": "\\b[A-Z]{1}[0-9]{8}\\b",
+            "description": "Potential Egyptian Passport Number",
+            "severity": "High",
+            "recommended_action": "Avoid storing passport numbers directly; secure them if necessary."
+        }
+    ],
+    "Credit Card Numbers": [
+        {
+            "pattern": "\\b5[1-5][0-9]{14}\\b",
+            "description": "Potential Credit Card Number (MasterCard)",
+            "severity": "High",
+            "recommended_action": "Do not store credit card numbers directly; use a secure payment gateway."
+        },
+        {
+            "pattern": "\\b3[47][0-9]{13}\\b",
+            "description": "Potential Credit Card Number (American Express)",
+            "severity": "High",
+            "recommended_action": "Do not store credit card numbers directly; use a secure payment gateway."
+        }
+    ],
+    "Injection Vulnerabilities": [
+        {
+            "pattern": "(?i)(os\\.system|subprocess\\.popen|subprocess\\.call|subprocess\\.run|eval|exec|popen|shell_exec|system|passthru|ProcessBuilder)",
+            "description": "Potential Command Injection (Dangerous Function Usage)",
+            "severity": "High",
+            "recommended_action": "Avoid using potentially dangerous functions that can lead to command injection."
+        },
+        {
+            "pattern": "(execute|query|prepare|executeQuery|executeUpdate)\\s*\\(.*[+].*\\)",
+            "description": "Potential SQL Injection (Concatenated SQL Commands)",
+            "severity": "High",
+            "recommended_action": "Avoid concatenating user inputs in SQL commands; use parameterized queries."
+        }
+    ],
+    "Cross-Site Scripting (XSS)": [
+        {
+            "pattern": "<script\\b[^>]*>(.*?)<\\/script>",
+            "description": "Potential XSS (Inline JavaScript)",
+            "severity": "High",
+            "recommended_action": "Avoid directly including user input in inline JavaScript; use proper encoding or sanitization."
+        },
+        {
+            "pattern": "<.*?\\bon\\w+\\s*=\\s*[\"'].*?\\+.*?[\"'].*?>",
+            "description": "Potential XSS (Event Handler in HTML Tag)",
+            "severity": "High",
+            "recommended_action": "Avoid using untrusted data in HTML event handlers. Sanitize and encode data before insertion."
+        }
+    ],
+    "Sensitive Data in Logs": [
+        {
+            "pattern": "(print|console\\.log|logger\\.info|logger\\.debug|logging\\.info)\\s*\\(.*?(api[_-]?key|secret|token|password|passwd|jwt).*\\)",
+            "description": "Sensitive Data in Logs",
+            "severity": "High",
+            "recommended_action": "Do not log sensitive data."
+        }
+    ],
+    "Insecure URLs and Endpoints": [
+        {
+            "pattern": "(?i)http:\\/\\/[^\\s]+",
+            "description": "Insecure HTTP URL",
+            "severity": "Medium",
+            "recommended_action": "Use HTTPS for secure connections."
+        }
+    ],
+    "Debugging and Development Information": [
+        {
+            "pattern": "(?i)(debug|development)[\\s:=]+(true|1)",
+            "description": "Debug Mode Enabled",
+            "severity": "Medium",
+            "recommended_action": "Ensure debug mode is disabled in production."
+        }
+    ],
+    "IP Address Exposure": [
+        {
+            "pattern": "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
+            "description": "IP Address Exposure",
+            "severity": "Medium",
+            "recommended_action": "Ensure IP addresses are masked or redacted if not necessary."
+        }
+    ],
+    "API Endpoints": [
+        {
+            "pattern": "api\\.endpoints\\.expose\\s*=\\s*\\*",
+            "description": "All API Endpoints Exposed",
+            "severity": "High",
+            "recommended_action": "Limit exposure of API endpoints to necessary endpoints only, and secure with authentication."
+        },
+        {
+            "pattern": "api\\.endpoints\\.expose\\s*=\\s*(public|internal|private|v1|v2|v3|v4|v5)",
+            "description": "Exposed API Endpoint (public/internal/private/version)",
+            "severity": "Medium",
+            "recommended_action": "Ensure that exposed endpoints are not disclosing sensitive information."
+        }
+    ],
+    "Swagger URLs": [
+        {
+            "pattern": "swagger\\.ui\\.path\\s*=\\s*/swagger-ui\\.html",
+            "description": "Swagger UI Exposed",
+            "severity": "Medium",
+            "recommended_action": "Restrict access to Swagger UI in production environments."
+        },
+        {
+            "pattern": "swagger\\.api\\.docs\\.path\\s*=\\s*/(v1|v2|v3)/api-docs",
+            "description": "Swagger API Docs Exposed (versioned)",
+            "severity": "Medium",
+            "recommended_action": "Restrict access to Swagger API documentation in production environments."
+        },
+        {
+            "pattern": "swagger\\.api\\.docs\\.path\\s*=\\s*/api-docs",
+            "description": "Swagger API Docs Exposed (generic)",
+            "severity": "Medium",
+            "recommended_action": "Restrict access to Swagger API documentation in production environments."
+        }
+    ],
+    "Java and Spring Boot Specific Checks": [
+        {
+            "pattern": "PreparedStatement\\s+\\w+\\s*=\\s*conn\\.prepareStatement\\s*\\(\\s*\".*[\\+\\?].*\"\\)",
+            "description": "Potential SQL Injection with PreparedStatement Concatenation",
+            "severity": "High",
+            "recommended_action": "Use parameterized queries with placeholders (?) in PreparedStatements to avoid SQL injection vulnerabilities."
+        },
+        {
+            "pattern": "@NamedQuery\\((.*query\\s*=\\s*\".*[+].*\")\\)",
+            "description": "Potential SQL Injection in JPA NamedQuery",
+            "severity": "High",
+            "recommended_action": "Avoid concatenating user input in NamedQueries; use parameterized queries."
+        },
+        {
+            "pattern": "jdbcTemplate\\.query(?:For|)\\(.*[+].*\\)",
+            "description": "Potential SQL Injection with JdbcTemplate",
+            "severity": "High",
+            "recommended_action": "Avoid concatenating user input in JdbcTemplate queries; use placeholders or bind parameters."
+        },
+        {
+            "pattern": "(Runtime\\.getRuntime\\(\\)\\.exec|new\\s+ProcessBuilder)\\s*\\(.*[+].*\\)",
+            "description": "Potential Command Injection (Runtime/ProcessBuilder)",
+            "severity": "High",
+            "recommended_action": "Avoid passing concatenated strings to Runtime.exec or ProcessBuilder; sanitize inputs and consider safer alternatives."
+        },
+        {
+            "pattern": "new\\s+ObjectInputStream\\s*\\(\\s*.*\\)",
+            "description": "Potential Deserialization of Untrusted Data",
+            "severity": "Critical",
+            "recommended_action": "Avoid deserializing untrusted data; use secure alternatives or whitelist classes."
+        },
+        {
+            "pattern": "new\\s+ObjectMapper\\(\\)\\.readValue\\s*\\(.*\\)",
+            "description": "Potential Jackson Deserialization Vulnerability",
+            "severity": "High",
+            "recommended_action": "Ensure Jackson ObjectMapper is configured with safe default typing to avoid deserialization issues."
+        },
+        {
+            "pattern": "new\\s+(SAXParserFactory|DocumentBuilderFactory|SAXBuilder|XMLReader|XMLInputFactory)\\(\\)",
+            "description": "Potential XXE Vulnerability in XML Parser",
+            "severity": "High",
+            "recommended_action": "Disable external entity processing in XML parsers to prevent XXE attacks."
+        },
+        {
+            "pattern": "return\\s+\"redirect:\\s*\"\\s*\\+\\s*request\\.getParameter\\(\\s*\".*\"\\s*\\)",
+            "description": "Potential Open Redirect Vulnerability",
+            "severity": "High",
+            "recommended_action": "Validate and sanitize URL parameters to prevent open redirects."
+        },
+        {
+            "pattern": "ObjectInputStream\\s*\\(\\s*new\\s*FileInputStream\\s*\\(.*\\)\\s*\\)",
+            "description": "Insecure Deserialization (ObjectInputStream)",
+            "severity": "High",
+            "recommended_action": "Avoid deserializing untrusted data with ObjectInputStream; use safer alternatives."
+        },
+        {
+            "pattern": "ObjectInputStream\\s*\\(\\s*request\\.getInputStream\\(\\s*\\)\\s*\\)",
+            "description": "Insecure Deserialization from User Input",
+            "severity": "High",
+            "recommended_action": "Do not deserialize data directly from user input; validate and sanitize data sources."
+        },
+        {
+            "pattern": "new\\s+ObjectMapper\\(\\)\\.readValue\\s*\\(.*\\)\\.typeFactory\\.constructType\\s*\\(.*\\)",
+            "description": "Potential RCE via Jackson Deserialization",
+            "severity": "High",
+            "recommended_action": "Avoid deserializing unknown types in Jackson; use `TypeFactory.defaultInstance()` or `ObjectMapper.enableDefaultTyping` carefully."
+        },
+        {
+            "pattern": "Registry\\s+registry\\s*=\\s*LocateRegistry\\.createRegistry\\s*\\((1099|default)\\)",
+            "description": "Insecure RMI Registry Exposure",
+            "severity": "High",
+            "recommended_action": "Avoid exposing RMI registry on insecure ports without proper security controls."
+        },
+        {
+            "pattern": "@Query\\s*\\(\\s*\"SELECT\\s+.*\\s+WHERE\\s+.*\"\\s*\\)",
+            "description": "Potential SQL Injection in Spring Data Repository",
+            "severity": "High",
+            "recommended_action": "Use parameterized queries or criteria queries in Spring Data JPA repositories."
+        },
+        {
+            "pattern": "entityManager\\.createQuery\\s*\\(\\s*\".*\\s+[+]\\s+.*\"\\s*\\)",
+            "description": "Potential SQL Injection via JPQL (Dynamic Query)",
+            "severity": "High",
+            "recommended_action": "Avoid dynamic JPQL queries with concatenated user input; use parameterized queries."
+        },
+        {
+            "pattern": "ModelAndView\\(\\s*\".*\"\\s*,\\s*\".*\"\\s*,\\s*request\\.getParameter\\(\\s*\".*\"\\s*\\)",
+            "description": "Potential XSS in ModelAndView",
+            "severity": "High",
+            "recommended_action": "Avoid directly rendering user inputs in ModelAndView without sanitization."
+        },
+        {
+            "pattern": "management\\.endpoints\\.web\\.exposure\\.include\\s*=\\s*\\*",
+            "description": "All Actuator Endpoints Exposed",
+            "severity": "High",
+            "recommended_action": "Limit exposure of Actuator endpoints to necessary ones only and secure them with authentication."
+        },
+        {
+            "pattern": "management\\.endpoints\\.web\\.exposure\\.include\\s*=\\s*(health|info)",
+            "description": "Sensitive Actuator Endpoint Exposed",
+            "severity": "Medium",
+            "recommended_action": "Ensure that exposed endpoints are restricted to trusted networks and do not disclose sensitive information."
+        },
+        {
+            "pattern": "spring\\.security\\.csrf\\.enabled\\s*=\\s*false",
+            "description": "CSRF Protection Disabled",
+            "severity": "High",
+            "recommended_action": "Enable CSRF protection for all forms or secure endpoints requiring stateful interactions."
+        },
+        {
+            "pattern": "Content-Security-Policy\\s*:\\s*default-src\\s+.*;",
+            "description": "Weak Content Security Policy (CSP)",
+            "severity": "Medium",
+            "recommended_action": "Define a strict CSP to prevent unauthorized resource loading and mitigate XSS risks."
+        },
+        {
+            "pattern": "new\\s+InitialDirContext\\(\\s*env\\s*\\)\\.search\\(.*[+].*\\)",
+            "description": "Potential LDAP Injection (Unfiltered User Input)",
+            "severity": "High",
+            "recommended_action": "Avoid using unfiltered user input in LDAP queries; sanitize inputs properly."
+        },
+        {
+            "pattern": "new\\s+File\\(\\s*request\\.getParameter\\(\\s*\".*\"\\s*\\)\\s*\\)",
+            "description": "Potential Path Traversal (User Input in File Paths)",
+            "severity": "High",
+            "recommended_action": "Avoid using raw user inputs in file paths; validate and sanitize path inputs."
+        },
+        {
+            "pattern": "\\$\\{\\s*request\\.(getParameter|getAttribute|getHeader)\\(.*\\)\\s*\\}",
+            "description": "Potential Reflected XSS in Template (Thymeleaf/JSP)",
+            "severity": "High",
+            "recommended_action": "Escape user input before rendering it in Thymeleaf or JSP templates to prevent XSS."
+        }
+    ],
+    "Potential Race Condition Indicators Spring Boot": [
+        {
+            "pattern": "@Synchronized",
+            "description": "Use of @Synchronized Annotation",
+            "severity": "Medium",
+            "recommended_action": "Verify that synchronization meets the application’s concurrency needs."
+        },
+        {
+            "pattern": "@Lock\\(LockModeType\\.PESSIMISTIC_WRITE\\)",
+            "description": "Pessimistic Locking Usage",
+            "severity": "Low",
+            "recommended_action": "Check if this locking strategy is appropriately used to prevent race conditions."
+        },
+        {
+            "pattern": "\\bExecutorService\\b|\\bThreadPoolTaskExecutor\\b",
+            "description": "Custom Thread Pool Usage",
+            "severity": "Medium",
+            "recommended_action": "Ensure proper thread management and safety within custom thread pools."
+        },
+        {
+            "pattern": "@Async",
+            "description": "Asynchronous Method Annotation (@Async)",
+            "severity": "High",
+            "recommended_action": "Ensure that @Async methods are thread-safe and do not access shared mutable state."
+        },
+        {
+            "pattern": "@Transactional\\((isolation\\s*=\\s*Isolation\\.(REPEATABLE_READ|SERIALIZABLE))\\)",
+            "description": "High Isolation Level Transactional",
+            "severity": "Low",
+            "recommended_action": "Check if high isolation levels are necessary and properly set to avoid race conditions."
+        },
+        {
+            "pattern": "new\\s+ReentrantLock\\(\\)",
+            "description": "Explicit ReentrantLock Usage",
+            "severity": "Medium",
+            "recommended_action": "Review ReentrantLock usage for proper handling of concurrency scenarios."
+        },
+        {
+            "pattern": "@Transactional",
+            "description": "Transactional Annotation Usage",
+            "severity": "Medium",
+            "recommended_action": "Ensure transactions are properly scoped to prevent race conditions in concurrent data access."
+        },
+        {
+            "pattern": "Collections\\.synchronized|ConcurrentHashMap|CopyOnWriteArrayList",
+            "description": "Thread-safe Collection Usage",
+            "severity": "Low",
+            "recommended_action": "Confirm that thread-safe collections are used appropriately to handle concurrent access."
+        }
+    ],
+    "Insecure Password Encoder": [
+        {
+            "pattern": "new\\s+BCryptPasswordEncoder\\(\\s*0\\s*\\)",
+            "description": "Weak BCryptPasswordEncoder Configuration",
+            "severity": "High",
+            "recommended_action": "Use a BCrypt strength of at least 10 for secure password encoding."
+        },
+        {
+            "pattern": "NoOpPasswordEncoder\\.getInstance\\(\\)",
+            "description": "NoOpPasswordEncoder (Plaintext Passwords)",
+            "severity": "Critical",
+            "recommended_action": "Do not use NoOpPasswordEncoder; passwords should never be stored in plaintext."
+        }
+    ],
+    "Log4J Vulnerability Detection": [
+        {
+            "pattern": "log4j[-\\.]?(core|api)[-:]\\d+\\.\\d+\\.\\d+",
+            "description": "Log4J Dependency Found",
+            "severity": "High",
+            "recommended_action": "Check if the Log4J version is vulnerable. Upgrade to a secure version (>=2.17.1 for Log4J 2 or >=1.2.17 for Log4J 1 with mitigations)."
+        },
+        {
+            "pattern": "jndi(?:Lookup)?\\s*=\\s*[\"']?(ldap|ldaps|rmi|dns|iiop|nis|corba|nds):",
+            "description": "Potentially Vulnerable JNDI Lookup Configuration in Log4J",
+            "severity": "Critical",
+            "recommended_action": "Remove or restrict JNDI lookups in Log4J configuration to mitigate remote code execution risks."
+        },
+        {
+            "pattern": "log4j2\\.formatMsgNoLookups\\s*=\\s*[\"']?false[\"']?",
+            "description": "Format Message Lookups Enabled",
+            "severity": "High",
+            "recommended_action": "Set log4j2.formatMsgNoLookups to true to disable message lookups and mitigate CVE-2021-44228."
+        },
+        {
+            "pattern": "(log4j2?\\.properties|log4j2?\\.xml)",
+            "description": "Log4J Configuration File Detected",
+            "severity": "Medium",
+            "recommended_action": "Review Log4J configuration file for secure settings and ensure no vulnerable settings are present."
+        },
+        {
+            "pattern": "log4j\\.appender\\.[A-Za-z]+\\s*=.*SocketAppender",
+            "description": "Insecure Log4J SocketAppender Detected",
+            "severity": "High",
+            "recommended_action": "Use secure communication methods for Log4J appenders to prevent exposure of log data to network interception."
+        },
+        {
+            "pattern": "log4j[-\\.]?(core|api)[-:]((2\\.0|2\\.1[0-6]|2\\.17\\.0)\\.\\d+)",
+            "description": "Vulnerable Log4J Version Detected",
+            "severity": "Critical",
+            "recommended_action": "Upgrade to Log4J 2.17.1 or later to address known vulnerabilities."
+        },
+        {
+            "pattern": "\\$\\{jndi:(ldap|rmi|dns|ldaps):\\/\\/[^}]+\\}",
+            "description": "JNDI Injection Pattern Detected in Logs",
+            "severity": "Critical",
+            "recommended_action": "Sanitize and validate log inputs to prevent JNDI injection attempts."
+        },
+        {
+            "pattern": "log4j\\.appender\\.[A-Za-z]+\\.RemoteHost\\s*=\\s*[\"']?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}[\"']?",
+            "description": "Hardcoded IP in Log4J SocketAppender",
+            "severity": "Medium",
+            "recommended_action": "Avoid hardcoding IP addresses in log appenders. Use secure, dynamic configurations instead."
+        },
+        {
+            "pattern": "org\\.apache\\.log4j\\.net\\.SocketServer",
+            "description": "Log4J SocketServer Detected",
+            "severity": "High",
+            "recommended_action": "Avoid exposing Log4J SocketServer to untrusted networks to prevent unauthorized access to logging services."
+        }
+    ],
+    "ASP.NET Comprehensive Security Checks": [
+        {
+            "pattern": "<authentication\\s+mode\\s*=\\s*[\"']None[\"']",
+            "description": "Authentication Mode Set to None",
+            "severity": "High",
+            "recommended_action": "Set authentication mode to Forms, Windows, or another secure method to control access."
+        },
+        {
+            "pattern": "<compilation\\s+debug\\s*=\\s*[\"']true[\"']",
+            "description": "Debug Mode Enabled",
+            "severity": "High",
+            "recommended_action": "Disable debug mode in production to prevent exposure of sensitive debugging information."
+        },
+        {
+            "pattern": "<customErrors\\s+mode\\s*=\\s*[\"']Off[\"']",
+            "description": "Custom Errors Disabled",
+            "severity": "High",
+            "recommended_action": "Enable custom error handling to avoid exposing stack traces and internal details in production."
+        },
+        {
+            "pattern": "<machineKey\\s+validation\\s*=\\s*[\"']3DES[\"']",
+            "description": "Weak Encryption Algorithm (3DES)",
+            "severity": "High",
+            "recommended_action": "Use AES or SHA256 for stronger security in cryptographic operations."
+        },
+        {
+            "pattern": "<machineKey\\s+decryptionKey\\s*=\\s*[\"']AutoGenerate",
+            "description": "Auto-Generated Machine Key",
+            "severity": "High",
+            "recommended_action": "Configure a strong, manually generated machine key to protect session and authentication data."
+        },
+        {
+            "pattern": "<pages\\s+enableViewState\\s*=\\s*[\"']true[\"']",
+            "description": "ViewState Enabled",
+            "severity": "Medium",
+            "recommended_action": "Disable ViewState if not needed, especially on pages with sensitive data to reduce attack surface."
+        },
+        {
+            "pattern": "<pages\\s+enableViewStateMac\\s*=\\s*[\"']false[\"']",
+            "description": "ViewState MAC Disabled",
+            "severity": "High",
+            "recommended_action": "Enable ViewState MAC to protect ViewState integrity from tampering attacks."
+        },
+        {
+            "pattern": "<sessionState\\s+mode\\s*=\\s*[\"']InProc[\"']",
+            "description": "Session State InProc Mode",
+            "severity": "Medium",
+            "recommended_action": "Use StateServer or SQLServer mode for session management in multi-server environments."
+        },
+        {
+            "pattern": "<sessionState\\s+timeout\\s*=\\s*[\"']\\d+[\"']",
+            "description": "Short Session Timeout",
+            "severity": "Low",
+            "recommended_action": "Set an appropriate session timeout for security without affecting user experience excessively."
+        },
+        {
+            "pattern": "<httpCookies\\s+httpOnlyCookies\\s*=\\s*[\"']false[\"']",
+            "description": "HttpOnly Cookies Disabled",
+            "severity": "High",
+            "recommended_action": "Enable HttpOnly cookies to prevent client-side script access to session cookies."
+        },
+        {
+            "pattern": "<httpCookies\\s+requireSSL\\s*=\\s*[\"']false[\"']",
+            "description": "Secure Cookies Disabled",
+            "severity": "High",
+            "recommended_action": "Enable secure cookies to prevent them from being transmitted over unencrypted connections."
+        },
+        {
+            "pattern": "<sessionState\\s+cookieSameSite\\s*=\\s*[\"']None[\"']",
+            "description": "SameSite Cookie Set to None",
+            "severity": "Medium",
+            "recommended_action": "Set SameSite=Lax or SameSite=Strict to protect cookies from CSRF attacks."
+        },
+        {
+            "pattern": "<httpProtocol>\\s*<customHeaders>\\s*<add\\s+name\\s*=\\s*[\"']X-XSS-Protection[\"']\\s+value\\s*=\\s*[\"']0[\"']",
+            "description": "X-XSS-Protection Disabled",
+            "severity": "High",
+            "recommended_action": "Enable X-XSS-Protection to help protect against reflected XSS attacks."
+        },
+        {
+            "pattern": "<httpProtocol>\\s*<customHeaders>(?!.*X-Content-Type-Options)",
+            "description": "Missing X-Content-Type-Options Header",
+            "severity": "Medium",
+            "recommended_action": "Add the X-Content-Type-Options header to protect against MIME-type sniffing attacks."
+        },
+        {
+            "pattern": "<httpProtocol>\\s*<customHeaders>(?!.*Strict-Transport-Security)",
+            "description": "Missing Strict-Transport-Security Header",
+            "severity": "High",
+            "recommended_action": "Use the Strict-Transport-Security header to enforce HTTPS and protect against downgrade attacks."
+        },
+        {
+            "pattern": "<add\\s+key\\s*=\\s*[\"'](.*password|.*connectionString)[\"']\\s+value\\s*=\\s*[\"'].*[\"']",
+            "description": "Sensitive Data in Web.Config",
+            "severity": "High",
+            "recommended_action": "Avoid storing sensitive data directly in Web.config. Use encryption or secure environment variables."
+        },
+        {
+            "pattern": "<add\\s+name\\s*=\\s*[\"']Access-Control-Allow-Origin[\"']\\s+value\\s*=\\s*[\"']\\*[\"']",
+            "description": "CORS Policy Allows All Origins",
+            "severity": "High",
+            "recommended_action": "Limit CORS to specific trusted domains to prevent unauthorized data access."
+        },
+        {
+            "pattern": "<httpHandlers>\\s*<add\\s+verb\\s*=\\s*[\"']\\*[\"']\\s+path\\s*=\\s*[\"'].*\\.(asmx|svc)[\"']",
+            "description": "ASP.NET Web Service Endpoints Exposed",
+            "severity": "High",
+            "recommended_action": "Restrict access to web service endpoints and secure them with authentication."
+        },
+        {
+            "pattern": "<pages\\s+enableEventValidation\\s*=\\s*[\"']false[\"']",
+            "description": "Event Validation Disabled",
+            "severity": "High",
+            "recommended_action": "Enable event validation to prevent unauthorized postback and request forgery attacks."
+        },
+        {
+            "pattern": "<system.web>\\s*<pages\\s+enableViewStateMac\\s*=\\s*[\"']false[\"']",
+            "description": "ViewState MAC Disabled",
+            "severity": "High",
+            "recommended_action": "Enable ViewState MAC to prevent unauthorized view state tampering."
+        },
+        {
+            "pattern": "<httpErrors\\s+errorMode\\s*=\\s*[\"']Detailed[\"']",
+            "description": "Detailed Error Mode Enabled",
+            "severity": "High",
+            "recommended_action": "Disable detailed error mode in production to prevent sensitive data exposure in error messages."
+        },
+        {
+            "pattern": "<add\\s+name\\s*=\\s*[\"']X-Powered-By[\"']",
+            "description": "X-Powered-By Header Present",
+            "severity": "Low",
+            "recommended_action": "Remove the X-Powered-By header to avoid revealing technology stack information to potential attackers."
+        },
+        {
+            "pattern": "<httpProtocol>\\s*<customHeaders>(?!.*Content-Security-Policy)",
+            "description": "Missing Content-Security-Policy Header",
+            "severity": "High",
+            "recommended_action": "Define a Content-Security-Policy header to control resources loaded and reduce the risk of XSS."
+        },
+        {
+            "pattern": "<security>\\s*<access\\s+sslFlags\\s*=\\s*[\"']None[\"']",
+            "description": "SSL Disabled for Directory",
+            "severity": "High",
+            "recommended_action": "Set sslFlags to 'Ssl' or 'SslNegotiateCert' to enforce HTTPS for directory access."
+        }
+    ],
+    "NodeJS Vulnerabilities": [
+        {
+            "pattern": "process\\.env\\.(DB_PASSWORD|SECRET_KEY|API_KEY)\\s*=\\s*[\"'].*[\"']",
+            "description": "Hardcoded Environment Variables",
+            "severity": "High",
+            "recommended_action": "Avoid hardcoding sensitive environment variables in your code; use environment configuration files or secret management tools."
+        },
+        {
+            "pattern": "app\\.use\\s*\\(\\s*express\\.static\\s*\\(\\s*[\"'].*[\"']\\s*\\)\\s*\\)",
+            "description": "Serving Static Files Insecurely",
+            "severity": "Medium",
+            "recommended_action": "Ensure static files are served securely and consider using a content delivery network (CDN)."
+        },
+        {
+            "pattern": "app\\.use\\s*\\(\\s*helmet\\(\\s*\\)\\s*\\)",
+            "description": "Missing Helmet Middleware",
+            "severity": "High",
+            "recommended_action": "Use Helmet to secure your Express apps by setting various HTTP headers."
+        }
+    ],
+    "Python Security Best Practices": [
+        {
+            "pattern": "os\\.system\\(.*\\)",
+            "description": "Potential Command Injection (os.system)",
+            "severity": "High",
+            "recommended_action": "Avoid using os.system for executing shell commands; use subprocess module with proper arguments."
+        },
+        {
+            "pattern": "pickle\\.loads\\(.*\\)",
+            "description": "Potential Deserialization Vulnerability (Pickle)",
+            "severity": "High",
+            "recommended_action": "Avoid deserializing untrusted data with pickle; use safer alternatives like JSON."
+        },
+        {
+            "pattern": "yaml\\.load\\(.*\\)",
+            "description": "Potential YAML Deserialization Vulnerability",
+            "severity": "High",
+            "recommended_action": "Avoid deserializing untrusted YAML data; use safe loading methods or validate inputs."
+        },
+        {
+            "pattern": "eval\\(.*\\)",
+            "description": "Potential Code Injection (eval)",
+            "severity": "High",
+            "recommended_action": "Avoid using eval for executing arbitrary code; use safer alternatives for dynamic code execution."
+        },
+        {
+            "pattern": "subprocess\\.run\\(.*shell=True\\)",
+            "description": "Shell Injection via subprocess.run",
+            "severity": "High",
+            "recommended_action": "Avoid using shell=True in subprocess.run to prevent shell injection vulnerabilities."
+        },
+        {
+            "pattern": "subprocess\\.Popen\\(.*shell=True\\)",
+            "description": "Shell Injection via subprocess.Popen",
+            "severity": "High",
+            "recommended_action": "Avoid using shell=True in subprocess.Popen to prevent shell injection vulnerabilities."
+        },
+        {
+            "pattern": "requests\\.get\\(.*verify=False\\)",
+            "description": "SSL/TLS Verification Disabled",
+            "severity": "High",
+            "recommended_action": "Enable SSL/TLS verification in requests to prevent communication through an insecure channels."
+        }
+    ]
+}
