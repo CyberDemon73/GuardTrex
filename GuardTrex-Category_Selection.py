@@ -28,6 +28,9 @@ logging.basicConfig(
 # Constants
 CACHE_FILE = 'scan_cache.txt'
 IGNORE_LIST = ['node_modules', '.git', '__pycache__']
+WORKSPACES_ROOT = 'Workspaces'  # Root folder for all workspaces
+CACHE_FILE_NAME = 'scan_cache.txt'
+LOG_FILE_NAME = 'security_scan.log'
 SCANNABLE_EXTENSIONS = ('.java', '.properties', '.xml', '.py', '.js', '.yml', '.json')
 GUARDTREX_ASCII = """
    ____ _   _   _    ____  ____ _____ ____  _______  __
@@ -43,11 +46,67 @@ sensitive_data_map = {}
 
 # Load patterns from patterns.json
 def load_patterns_from_json(file_path="patterns.json"):
-    with open(file_path, 'r') as file:
-        return json.load(file)
+    try:
+        # Step 1: Confirm file path and existence
+        if not os.path.exists(file_path):
+            print(Fore.RED + f"Error: The file '{file_path}' does not exist.")
+            return {}
+
+        # Step 2: Attempt to read file content
+        print("Reading patterns.json...")
+        with open(file_path, 'r') as file:
+            raw_patterns = json.load(file)
+            print("Raw JSON data loaded")  # Debugging print
+
+            # Step 3: Convert JSON data to compiled regex patterns
+            processed_patterns = {
+                category: [
+                    (
+                        re.compile(item["pattern"], re.IGNORECASE),
+                        item["description"],
+                        item["severity"],
+                        item["recommended_action"]
+                    )
+                    for item in items
+                ]
+                for category, items in raw_patterns.items()
+            }
+            print("Processed PATTERNS dictionary")  # Debugging print
+            return processed_patterns
+
+    except FileNotFoundError:
+        logging.error(f"File not found: {file_path}. Please ensure patterns.json is in the correct location.")
+        print(Fore.RED + f"Error: The file '{file_path}' was not found. Please check the file path.")
+    except json.JSONDecodeError as e:
+        logging.error(f"Error decoding JSON from {file_path}: {e}")
+        print(Fore.RED + f"Error: Failed to parse JSON in '{file_path}'. Please check for syntax errors.")
+    except Exception as e:
+        logging.error(f"Unexpected error loading {file_path}: {e}")
+        print(Fore.RED + f"An unexpected error occurred while loading '{file_path}': {e}")
+    return {}  # Return an empty dictionary if loading fails
+
+
 
 PATTERNS = load_patterns_from_json()
 
+
+def setup_workspace_directory(workspace_name):
+    """Sets up the workspace directory structure and returns paths for logging and caching."""
+    workspace_path = os.path.join(WORKSPACES_ROOT, workspace_name)
+    os.makedirs(workspace_path, exist_ok=True)
+
+    # Paths within the workspace
+    log_file_path = os.path.join(workspace_path, LOG_FILE_NAME)
+    cache_file_path = os.path.join(workspace_path, CACHE_FILE_NAME)
+
+    # Configure logging to point to the workspace log file
+    logging.basicConfig(
+        filename=log_file_path,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+
+    return workspace_path, log_file_path, cache_file_path
 
 # Color map for severity levels
 COLOR_MAP = {
@@ -110,11 +169,12 @@ def display_category_menu():
     else:
         return [categories[idx - 1] for idx in selected_indices if 1 <= idx <= len(categories)]
 
+# Fetch patterns for the selected categories
 def get_patterns_by_selected_categories(selected_categories):
-    """Fetch regex patterns for user-selected categories."""
     selected_patterns = []
     for category in selected_categories:
         selected_patterns.extend(PATTERNS[category])
+    print("Selected patterns for scan:", selected_patterns)  # Debugging print
     return selected_patterns
 
 def get_code_snippet(file_path, line_number, context=3):
@@ -327,6 +387,7 @@ def get_patterns_by_selected_categories(selected_categories):
         selected_patterns.extend(PATTERNS[category])
     return selected_patterns
 
+# Update main function to add workspace support
 def main():
     print(Fore.CYAN + Style.BRIGHT + GUARDTREX_ASCII)
     print(Fore.CYAN + Style.BRIGHT + "=" * 55)
@@ -335,12 +396,20 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="GuardTrex - Scan codebase for security vulnerabilities.",
-        epilog="Example usage: python GuardTrex.py <directory> --format both"
+        epilog="Example usage: python GuardTrex.py <directory> --workspace my_workspace --format both"
     )
     parser.add_argument('directory', type=str, nargs='?', help='Path to the directory to scan.')
     parser.add_argument('--format', choices=['html', 'csv', 'both'], default='both', help='Output report format (default: both)')
+    parser.add_argument('--workspace', type=str, required=True, help='Workspace name to save logs and reports.')
     parser.add_argument('--interactive', action='store_true', help='Run in interactive mode for a guided user journey.')
     args = parser.parse_args()
+
+    # Set up the workspace directory and retrieve log/cache paths
+    workspace_path, log_file_path, cache_file_path = setup_workspace_directory(args.workspace)
+
+    # Update CACHE_FILE with workspace-specific path
+    global CACHE_FILE
+    CACHE_FILE = cache_file_path
 
     # Interactive Mode for User Guidance
     if args.interactive:
@@ -359,7 +428,7 @@ def main():
         print(Fore.YELLOW + "1. HTML\n2. CSV\n3. Both HTML and CSV")
         format_choice = input(Fore.YELLOW + "Choose a format (1/2/3): ").strip()
         args.format = {"1": "html", "2": "csv", "3": "both"}.get(format_choice, "both")
-    
+
     # Final Directory Validation (in case of missing args)
     if not args.directory or not os.path.isdir(args.directory):
         print(Fore.RED + "Error: You must specify a valid directory to scan.")
@@ -377,12 +446,13 @@ def main():
 
     # Display Findings in Console
     print_findings(findings)
-    
+
     # Export Findings in Selected Format(s)
     if args.format in ['csv', 'both']:
-        export_to_csv(findings)
+        export_to_csv(findings, filename=os.path.join(workspace_path, "security_scan_report.csv"))
     if args.format in ['html', 'both']:
-        export_to_html(findings)
+        export_to_html(findings, filename=os.path.join(workspace_path, "security_scan_report.html"))
+
 
 if __name__ == "__main__":
     main()
