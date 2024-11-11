@@ -75,36 +75,153 @@ Reports are saved as `security_scan_report.csv` and/or `security_scan_report.htm
 
 GuardTrex records all activities and errors in `<workspace>/security_scan.log` for comprehensive auditing and troubleshooting.
 
+Here’s the updated **Example Issues Detected** section with the adjustments you've specified:
+
+---
+
 ## Example Issues Detected
 
+GuardTrex detects a variety of security issues that can arise in codebases, focusing on configuration errors, hardcoded secrets, sensitive data exposure, injection vulnerabilities, and more.
+
 **1. Configuration & Security Settings**
-   - Exposed Actuator Endpoints
-   - Disabled CSRF Protection
-   - Missing Content Security Policy (CSP)
+   - **Insecure Actuator and Admin Endpoints**  
+     - Exposes all actuator endpoints, risking sensitive system information.
+   - **Disabled CSRF Protection**  
+     - Disabling CSRF protection makes the application vulnerable to unauthorized actions.
+   - **Missing Content Security Policy (CSP)**  
+     - Lack of CSP allows content injection attacks, such as XSS.
+   - **TLS/SSL Disabled**  
+     - Disabling encryption exposes data in transit, making it susceptible to interception.
+   - **Permissive CORS Policy**  
+     - Allows access from all origins, risking data leakage across domains.
+   - **Debugging Enabled in Production**  
+     - Debug mode exposes detailed errors and internal information useful for attackers.
 
 **2. Hardcoded Secrets & Sensitive Data**
-   - Hardcoded API keys, secrets, and tokens
-   - Insecure password storage configurations
+   - **API Keys and Secrets**  
+     - Hardcoded API keys expose applications to unauthorized access.
+   - **Database Passwords**  
+     - Storing plaintext passwords in source code poses a high risk of data exposure.
+   - **Tokens and Session Management**  
+     - Hardcoded session IDs or JWT secrets risk account hijacking and data compromise.
 
-**3. Insecure Transmission and Endpoint Security**
-   - Unencrypted database connection strings
-   - Hardcoded cryptographic keys
+**3. Insecure Transmission & Endpoint Security**
+   - **Database Connection Strings**  
+     - Hardcoded database credentials can be exploited to access databases directly.
+   - **Insecure HTTP Usage**  
+     - Transmitting data over HTTP without encryption exposes it to interception.
+   - **Unprotected Web Services**  
+     - Exposes database consoles and other admin endpoints without protection.
 
 **4. Personally Identifiable Information (PII)**
-   - Social Security Numbers
-   - Contact and payment information
+   - **Social Security & ID Numbers**  
+     - Detects potential SSNs or similar formats that should not be hardcoded.
+   - **Credit Card Numbers**  
+     - Finds potential credit card numbers in code, which should be masked or securely stored.
+   - **Sensitive Contact Details**  
+     - Hardcoded phone numbers, emails, or addresses present a privacy risk.
 
-**5. Logging and External Data Exposure**
-   - Sensitive data logged in plain text
-   - Data transmitted to external requests
+**5. Sensitive Data in Logs & External Requests**
+   - **Logging Sensitive Data**  
+     - Logs containing sensitive data can expose this information if accessed.
+   - **Unsecured External Transmission**  
+     - Transmitting sensitive information over untrusted sources or protocols risks exposure.
 
 **6. Injection Vulnerabilities**
-   - Command injection
-   - SQL injection
+   - **Command Injection**  
+     - Command injection functions without sanitization can lead to arbitrary code execution.
+   - **SQL Injection**  
+     - Unparameterized database queries allow attackers to inject malicious SQL.
+   - **XXE Vulnerability**  
+     - XML external entities could be exploited to access local resources and sensitive data.
 
-**7. Outdated Libraries and Frameworks**
-   - Deprecated OpenSSL versions
-   - Known vulnerable dependency versions
+**7. Deprecated Libraries & Insecure Framework Versions**
+   - **Outdated Dependency**  
+     - Detects outdated versions of libraries like OpenSSL and Log4j, which may have known vulnerabilities.
+   - **Insecure Framework Configuration**  
+     - Allows the use of outdated protocols, increasing exposure to attacks.
+
+**8. Control Flow & Access Control Issues**
+   - **Improper Access Control Checks**  
+     - Missing role-based access control checks can lead to privilege escalation.
+   - **Publicly Exposed APIs**  
+     - Exposes APIs without adequate access control, risking unauthorized data access.
+
+**9. Debugging & Development Configurations**
+   - **Exposed Debug Endpoints**  
+     - Debug configurations should be disabled in production for security.
+   - **Testing URLs in Production Code**  
+     - Development or test environments should not be referenced in production.
+
+**10. IP Address & Whitelist Exposure**
+   - **Hardcoded IP Addresses**  
+     - Exposes internal or sensitive IPs, potentially revealing infrastructure layout.
+   - **Whitelisted IP Addresses**  
+     - Hardcoding IP whitelists without dynamic configuration can compromise access control.
+
+**11. Miscellaneous Sensitive Information**
+   - **Application Secrets**  
+     - Application secrets exposed in source code pose a security risk.
+   - **SMTP/Email Credentials**  
+     - Hardcoded email server credentials can lead to unauthorized email access.
+   - **Authorization Headers**  
+     - Hardcoded authorization tokens risk account compromise if leaked.
+
+---
+
+### Language-Specific Issues
+
+GuardTrex also covers language-specific vulnerabilities that can arise from certain features and libraries used in different programming languages.
+
+**Java**
+   - **Insecure Deserialization**  
+     - Identifies risky deserialization functions that could allow arbitrary code execution.
+   - **Hardcoded Passwords in Java Properties Files**  
+     - Detects sensitive credentials in `.properties` files commonly used in Java projects.
+   - **Reflection and Dynamic Code Execution**  
+     - Finds instances of dynamic code execution that may be exploitable if not secured.
+
+**Python**
+   - **Pickle Insecure Deserialization**  
+     - Detects the use of `pickle` and other insecure serialization modules.
+   - **Flask Debug Mode Enabled**  
+     - Identifies instances of Flask applications running in debug mode, which should be disabled in production.
+   - **Hardcoded API Keys in `.env` Files**  
+     - Finds sensitive information in configuration files like `.env`.
+
+**JavaScript/Node.js**
+   - **Insecure `eval` Usage**  
+     - Finds instances of `eval`, `Function` constructors, and similar patterns that allow arbitrary code execution.
+   - **Hardcoded JWT Secrets**  
+     - Detects hardcoded secrets used for JWT, which should be securely stored and dynamically configured.
+   - **Improper CORS Configuration**  
+     - Identifies overly permissive CORS settings, especially in Express.js applications.
+
+**Ruby**
+   - **Insecure YAML Deserialization**  
+     - Detects YAML deserialization functions, which can be vulnerable to remote code execution if not properly handled.
+   - **Rails `strong_parameters` Misconfiguration**  
+     - Finds Rails applications with improperly configured strong parameters, potentially allowing mass assignment vulnerabilities.
+   - **Secrets in Rails Configuration Files**  
+     - Checks for sensitive keys in `secrets.yml` or `credentials.yml.enc`, which should be protected.
+
+**PHP**
+   - **Insecure SQL Queries**  
+     - Finds SQL queries that concatenate user inputs, increasing SQL injection risks.
+   - **Insecure File Uploads**  
+     - Detects patterns for file uploads that lack proper validation, allowing malicious file types.
+   - **Deprecated Function Usage**  
+     - Identifies usage of deprecated or insecure PHP functions, such as `mysql_query` or `create_function`.
+
+**.NET**
+   - **Hardcoded Connection Strings**  
+     - Detects connection strings hardcoded in `.config` files, which should be secured.
+   - **Insecure ViewState**  
+     - Checks for improperly configured `ViewState`, which can lead to tampering vulnerabilities.
+   - **Weak Authentication Schemes**  
+     - Identifies weak or outdated authentication schemes within ASP.NET applications.
+
+--- 
 
 ## Visual Documentation
 
