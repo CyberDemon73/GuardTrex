@@ -48,6 +48,7 @@ python guardtrex.py <directory> --workspace <workspace_name> [--format csv|html|
 
 ### Example Command
 
+This command will scan the `src` directory and save the output files in `Workspaces/ProjectX/`.
 ```bash
 python3 guardtrex.py ./src --workspace ProjectX --format both
 ```
@@ -56,8 +57,6 @@ The following command will give you an interactive window directly as shown belo
 ```bash
 python3 guardtrex.py --interactive --workspace ProjectX
 ```
-
-This command will scan the `src` directory and save the output files in `Workspaces/ProjectX/`.
 
 ## Outputs
 
